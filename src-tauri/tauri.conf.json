@@ -1,0 +1,50 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Tattal",
+  "version": "0.1.0",
+  "identifier": "com.tattal.salestracker",
+
+  "build": {
+    "frontendDist": "../frontend/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm --prefix frontend run dev",
+    "beforeBuildCommand": "npm --prefix frontend run build"
+  },
+
+  "app": {
+    "windows": [
+      {
+        "title": "Tattal",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1000,
+        "minHeight": 650,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+
+    "security": {
+      "csp": null
+    }
+  },
+
+  "bundle": {
+    "active": true,
+
+    "targets": ["deb", "appimage", "msi", "nsis"],
+
+    "category": "Business",
+
+    "shortDescription": "Sales and inventory management",
+    "longDescription": "Tattal is a desktop sales, inventory, customer, expense and reporting application.",
+
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
+  }
+}
