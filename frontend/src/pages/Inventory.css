@@ -1,0 +1,556 @@
+/* ============================================================
+   INVENTORY PAGE STYLES
+   
+   This file contains all styles for the Inventory page including:
+   - Page layout and header
+   - Product selector dropdown
+   - Stock management form
+   - Current stock display
+   - Inventory movement history table
+   - Movement type badges
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.inventory-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.inventory-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.inventory-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.inventory-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Refresh Button */
+.inventory-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.inventory-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.inventory-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Primary Action Button (Add Stock) */
+.inventory-page .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.inventory-page .primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.inventory-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.inventory-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Success message */
+.inventory-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.inventory-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.inventory-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.inventory-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.inventory-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   PRODUCT SELECTOR
+   ============================================================ */
+
+.inventory-selector {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: end;
+  gap: 16px;
+  padding: 18px 20px 0;
+}
+
+/* ============================================================
+   FORM STYLES
+   ============================================================ */
+
+.inventory-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.inventory-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inventory-page .form-group label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.inventory-page .form-group input,
+.inventory-page .form-group select,
+.inventory-page .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.inventory-page .form-group input,
+.inventory-page .form-group select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.inventory-page .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  padding: 11px;
+}
+
+.inventory-page .form-group input:focus,
+.inventory-page .form-group textarea:focus,
+.inventory-page .form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.inventory-page .form-group input:disabled,
+.inventory-page .form-group textarea:disabled,
+.inventory-page .form-group select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.inventory-page .form-group input::placeholder,
+.inventory-page .form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.inventory-page .form-group small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ============================================================
+   STOCK SUMMARY
+   ============================================================ */
+
+.inventory-stock-summary {
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-muted);
+}
+
+.inventory-stock-summary span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inventory-stock-summary strong {
+  display: inline-block;
+  margin-top: 3px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.inventory-stock-summary small {
+  margin-left: 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ============================================================
+   STOCK ADDITION FORM
+   ============================================================ */
+
+.inventory-page .inventory-stock-form {
+  padding: 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.inventory-page .inventory-stock-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.inventory-page .inventory-stock-form-grid .form-group:last-child {
+  align-items: stretch;
+}
+
+.inventory-page .inventory-stock-form-grid button {
+  min-height: 40px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.inventory-page .inventory-stock-form-grid button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.inventory-page .inventory-stock-form-grid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ============================================================
+   INVENTORY HISTORY TABLE
+   ============================================================ */
+
+.inventory-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.inventory-page table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.inventory-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.inventory-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.inventory-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.inventory-page td strong {
+  color: var(--text);
+}
+
+/* Reference ID code styling */
+.inventory-page code {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   MOVEMENT BADGES
+   ============================================================ */
+
+/* Type badge (IN/OUT) */
+.inventory-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.inventory-badge.inventory-in {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.inventory-badge.inventory-out {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+/* Quantity styling */
+.inventory-quantity-in {
+  color: var(--success) !important;
+}
+
+.inventory-quantity-out {
+  color: var(--danger) !important;
+}
+
+/* Reason labels */
+.inventory-reason {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.inventory-page .loading {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.inventory-page .empty-state {
+  display: flex;
+  min-height: 140px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.inventory-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 992px) {
+  .inventory-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-page .inventory-stock-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-page .inventory-stock-form-grid button {
+    width: 100%;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .inventory-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .inventory-page .refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .inventory-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inventory-selector {
+    padding: 16px 16px 0;
+  }
+
+  .inventory-page .inventory-stock-form {
+    padding: 16px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .inventory-page {
+    gap: 18px;
+  }
+
+  .inventory-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .inventory-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .inventory-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .inventory-stock-summary strong {
+    font-size: 20px;
+  }
+}

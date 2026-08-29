@@ -1,5 +1,25 @@
-import { useEffect, useState } from "react";
+// ============================================================
+// Inventory.tsx
+// 
+// A comprehensive inventory management component that provides:
+// - Product selection for stock management
+// - Add stock to products with quantity validation
+// - View current stock levels
+// - Complete inventory movement history
+// - Movement type categorization (IN/OUT)
+// - Reference tracking for stock movements
+// ============================================================
 
+import { useCallback, useEffect, useState } from "react";
+import "./Inventory.css";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+/**
+ * Basic product information for inventory management
+ */
 type Product = {
   id: string;
   name: string;
@@ -7,10 +27,13 @@ type Product = {
   stock_quantity: number;
 };
 
+/**
+ * Inventory movement record
+ */
 type InventoryMovement = {
   id: string;
   product_id: string;
-  movement_type: "IN" | "OUT" | string;
+  movement_type: "IN" | "OUT";
   quantity: number;
   reference_type: string | null;
   reference_id: string | null;
@@ -18,56 +41,146 @@ type InventoryMovement = {
   created_at: string;
 };
 
-const API_URL = "http://127.0.0.1:3000";
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+// Use environment variable for API URL with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+/**
+ * Formats a timestamp to a readable date/time
+ * @param date - ISO timestamp string
+ * @returns Formatted date/time (e.g., "29 Aug, 2024, 14:30")
+ */
+const formatDateTime = (date: string): string => {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/**
+ * Gets a human-readable label for the movement reason
+ * @param movement - Inventory movement object
+ * @returns Display label for the movement reason
+ */
+const getMovementLabel = (movement: InventoryMovement): string => {
+  if (movement.reference_type === "SALE") {
+    return "Sale";
+  }
+
+  if (movement.reference_type === "STOCK_ADJUSTMENT") {
+    return "Stock Added";
+  }
+
+  if (movement.reference_type === "PURCHASE") {
+    return "Purchase";
+  }
+
+  if (movement.reference_type === "RETURN") {
+    return "Return";
+  }
+
+  return movement.reference_type || "Manual Movement";
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function Inventory() {
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
+  // Product data
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
 
+  // Form state
   const [stockQuantity, setStockQuantity] = useState("");
 
+  // Loading states
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [addingStock, setAddingStock] = useState(false);
 
+  // Error/Success states
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const loadProducts = async () => {
+  // ==========================================================
+  // DATA FETCHING
+  // ==========================================================
+
+  /**
+   * Fetches all products from the API
+   * Sets the first product as selected if available
+   */
+  const loadProducts = useCallback(async () => {
     try {
       setLoadingProducts(true);
       setError("");
+      setSuccess("");
 
       const response = await fetch(`${API_URL}/api/products`);
 
       if (!response.ok) {
-        throw new Error("Failed to load products.");
+        let errorMessage = `HTTP ${response.status}: Failed to load products`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
       }
 
       const data: Product[] = await response.json();
-
       setProducts(data);
 
+      // Handle empty product list
       if (data.length === 0) {
         setSelectedProductId("");
         setMovements([]);
         return;
       }
 
+      // Keep current selection if it still exists, otherwise select the first product
       setSelectedProductId((current) => {
         const stillExists = data.some((product) => product.id === current);
-
         return stillExists ? current : data[0].id;
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load products.");
+      const message = err instanceof Error ? err.message : "Failed to load products";
+      setError(message);
+      console.error("Products fetch error:", err);
     } finally {
       setLoadingProducts(false);
     }
-  };
+  }, []);
 
-  const loadMovements = async (productId: string) => {
+  /**
+   * Fetches inventory movements for a specific product
+   * @param productId - The ID of the product to fetch movements for
+   */
+  const loadMovements = useCallback(async (productId: string) => {
     if (!productId) {
       setMovements([]);
       return;
@@ -78,79 +191,206 @@ function Inventory() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/api/products/${productId}/inventory`,
+        `${API_URL}/api/products/${productId}/inventory`
       );
 
       if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to load inventory history.");
+        let errorMessage = `HTTP ${response.status}: Failed to load inventory history`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
       }
 
       const data: InventoryMovement[] = await response.json();
-
       setMovements(data);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load inventory history.",
-      );
+      const message = err instanceof Error ? err.message : "Failed to load inventory history";
+      setError(message);
+      console.error("Movements fetch error:", err);
     } finally {
       setLoadingMovements(false);
     }
-  };
-
-  useEffect(() => {
-    loadProducts();
   }, []);
 
-  useEffect(() => {
-    if (selectedProductId) {
-      loadMovements(selectedProductId);
-    } else {
-      setMovements([]);
-    }
-  }, [selectedProductId]);
+  // ==========================================================
+  // EFFECTS
+  // ==========================================================
 
+  /**
+   * Initial products loading on component mount
+   * Uses cancellation token to prevent memory leaks
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        setError("");
+
+        const response = await fetch(`${API_URL}/api/products`);
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: Failed to load products`;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
+          } catch {
+            // Ignore parsing errors
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data: Product[] = await response.json();
+
+        if (!cancelled) {
+          setProducts(data);
+
+          if (data.length === 0) {
+            setSelectedProductId("");
+            setMovements([]);
+          } else {
+            setSelectedProductId((current) => {
+              const stillExists = data.some((product) => product.id === current);
+              return stillExists ? current : data[0].id;
+            });
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Failed to load products";
+          setError(message);
+          console.error("Products fetch error:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingProducts(false);
+        }
+      }
+    };
+
+    void fetchProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Empty dependency array = run once on mount
+
+  /**
+   * Loads movements whenever the selected product changes
+   * Uses cancellation token to prevent race conditions
+   */
+  useEffect(() => {
+    if (!selectedProductId) {
+      setMovements([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchMovements = async () => {
+      try {
+        setLoadingMovements(true);
+        setError("");
+
+        const response = await fetch(
+          `${API_URL}/api/products/${selectedProductId}/inventory`
+        );
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: Failed to load inventory history`;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
+          } catch {
+            // Ignore parsing errors
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data: InventoryMovement[] = await response.json();
+
+        if (!cancelled) {
+          setMovements(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Failed to load inventory history";
+          setError(message);
+          console.error("Movements fetch error:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMovements(false);
+        }
+      }
+    };
+
+    void fetchMovements();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProductId]); // Re-run when selected product changes
+
+  // ==========================================================
+  // COMPUTED VALUES
+  // ==========================================================
+
+  /**
+   * The currently selected product object
+   */
   const selectedProduct = products.find(
-    (product) => product.id === selectedProductId,
+    (product) => product.id === selectedProductId
   );
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // ==========================================================
+  // STOCK OPERATIONS
+  // ==========================================================
 
-  const getMovementLabel = (movement: InventoryMovement) => {
-    if (movement.reference_type === "SALE") {
-      return "Sale";
-    }
-
-    if (movement.reference_type === "STOCK_ADJUSTMENT") {
-      return "Stock Added";
-    }
-
-    return movement.reference_type || "Manual Movement";
-  };
-
-  const addStock = async (event: React.FormEvent<HTMLFormElement>) => {
+  /**
+   * Adds stock to the currently selected product
+   * Validates input before submitting to the API
+   */
+  const addStock = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     setError("");
     setSuccess("");
 
+    // Validate product selection
     if (!selectedProductId) {
       setError("Please select a product.");
       return;
     }
 
+    // Validate quantity
     const quantity = Number(stockQuantity);
-
     if (!Number.isInteger(quantity) || quantity <= 0) {
       setError("Stock quantity must be a whole number greater than zero.");
       return;
@@ -169,51 +409,53 @@ function Inventory() {
           body: JSON.stringify({
             quantity,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
-        const message = await response.text();
-
-        let errorMessage = message || "Failed to add stock.";
-
+        let errorMessage = await response.text();
         try {
-          const parsed = JSON.parse(message);
-
-          if (typeof parsed === "string") {
-            errorMessage = parsed;
-          }
+          const parsed = JSON.parse(errorMessage);
+          errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
         } catch {
-          // Keep the original response text.
+          // Keep the original text
         }
-
-        throw new Error(errorMessage);
+        throw new Error(errorMessage || "Failed to add stock.");
       }
 
       const updatedProduct: Product = await response.json();
 
+      // Update the product in the list with the new stock quantity
       setProducts((current) =>
         current.map((product) =>
-          product.id === updatedProduct.id ? updatedProduct : product,
-        ),
+          product.id === updatedProduct.id ? updatedProduct : product
+        )
       );
 
+      // Clear the quantity input
       setStockQuantity("");
 
+      // Show success message
       setSuccess(
-        `${quantity} item${quantity !== 1 ? "s" : ""} added to ${updatedProduct.name
-        }.`,
+        `${quantity} item${quantity !== 1 ? "s" : ""} added to ${updatedProduct.name}.`
       );
 
+      // Refresh movements to show the new entry
       await loadMovements(selectedProductId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add stock.");
+      const message = err instanceof Error ? err.message : "Failed to add stock";
+      setError(message);
+      console.error("Add stock error:", err);
     } finally {
       setAddingStock(false);
     }
-  };
+  }, [selectedProductId, stockQuantity, loadMovements]);
 
-  const refreshInventory = async () => {
+  /**
+   * Refreshes all inventory data
+   * Reloads products and movements for the current selection
+   */
+  const refreshInventory = useCallback(async () => {
     setError("");
     setSuccess("");
 
@@ -222,11 +464,36 @@ function Inventory() {
     if (selectedProductId) {
       await loadMovements(selectedProductId);
     }
-  };
+  }, [loadProducts, loadMovements, selectedProductId]);
+
+  // ==========================================================
+  // RENDER HELPERS
+  // ==========================================================
+
+  /**
+   * Loading state renderer
+   */
+  if (loadingProducts) {
+    return (
+      <div className="inventory-page">
+        <div className="loading" role="status" aria-label="Loading inventory">
+          Loading inventory...
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================================
+  // MAIN RENDER
+  // ==========================================================
 
   return (
-    <>
-      <div className="page-header">
+    <div className="inventory-page" role="main" aria-label="Inventory Management">
+
+      {/* ==========================================================
+          HEADER
+          ========================================================== */}
+      <header className="page-header" aria-label="Inventory header">
         <div>
           <h2>Inventory</h2>
           <p>Manage stock and view inventory movement history.</p>
@@ -236,16 +503,31 @@ function Inventory() {
           className="refresh-button"
           onClick={refreshInventory}
           disabled={loadingProducts || loadingMovements || addingStock}
+          aria-label="Refresh inventory data"
         >
           {loadingProducts || loadingMovements ? "Loading..." : "Refresh"}
         </button>
-      </div>
+      </header>
 
-      {error && <div className="error">{error}</div>}
+      {/* ==========================================================
+          STATUS MESSAGES
+          ========================================================== */}
+      {error && (
+        <div className="error" role="alert">
+          {error}
+        </div>
+      )}
 
-      {success && <div className="success">{success}</div>}
+      {success && (
+        <div className="success" role="status">
+          {success}
+        </div>
+      )}
 
-      <section className="card">
+      {/* ==========================================================
+          STOCK MANAGEMENT
+          ========================================================== */}
+      <section className="card" aria-label="Stock management">
         <div className="card-header">
           <div>
             <h3>Stock Management</h3>
@@ -254,90 +536,104 @@ function Inventory() {
         </div>
 
         {loadingProducts ? (
-          <div className="loading">Loading products...</div>
+          <div className="loading" role="status">
+            Loading products...
+          </div>
         ) : products.length === 0 ? (
-          <div className="empty-state">
-            No products available. Add a product first.
+          <div className="empty-state" role="status">
+            <strong>No products available</strong>
+            <span>Add a product first using the Products page.</span>
           </div>
         ) : (
-          <div className="inventory-selector">
-            <div className="form-group">
-              <label htmlFor="inventory-product">Product</label>
-
-              <select
-                id="inventory-product"
-                value={selectedProductId}
-                onChange={(event) => {
-                  setSelectedProductId(event.target.value);
-                  setStockQuantity("");
-                  setError("");
-                  setSuccess("");
-                }}
-                disabled={addingStock}
-              >
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                    {product.sku ? ` (${product.sku})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {selectedProduct && (
-              <div className="inventory-stock-summary">
-                <span>Current Stock</span>
-                <strong>{selectedProduct.stock_quantity}</strong>
-                <small>units</small>
-              </div>
-            )}
-          </div>
-        )}
-
-        {selectedProduct && (
-          <form
-            className="sale-form"
-            onSubmit={addStock}
-            style={{ marginTop: "24px" }}
-          >
-            <div className="sale-form-grid">
+          <>
+            {/* Product Selector and Stock Summary */}
+            <div className="inventory-selector">
               <div className="form-group">
-                <label htmlFor="stock-quantity">Add Stock</label>
-
-                <input
-                  id="stock-quantity"
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="Enter quantity"
-                  value={stockQuantity}
-                  onChange={(event) => setStockQuantity(event.target.value)}
+                <label htmlFor="inventory-product">
+                  Product <span className="required">*</span>
+                </label>
+                <select
+                  id="inventory-product"
+                  value={selectedProductId}
+                  onChange={(event) => {
+                    setSelectedProductId(event.target.value);
+                    setStockQuantity("");
+                    setError("");
+                    setSuccess("");
+                  }}
                   disabled={addingStock}
-                />
-
-                <small>
-                  Current stock: {selectedProduct.stock_quantity} units
-                </small>
+                  required
+                  aria-required="true"
+                >
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                      {product.sku ? ` (${product.sku})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div
-                className="form-group"
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                }}
-              >
-                <button type="submit" disabled={addingStock}>
-                  {addingStock ? "Adding Stock..." : "Add Stock"}
-                </button>
-              </div>
+              {selectedProduct && (
+                <div className="inventory-stock-summary">
+                  <span>Current Stock</span>
+                  <strong>{selectedProduct.stock_quantity}</strong>
+                  <small>units</small>
+                </div>
+              )}
             </div>
-          </form>
+
+            {/* Add Stock Form */}
+            {selectedProduct && (
+              <form
+                className="inventory-stock-form"
+                onSubmit={addStock}
+                noValidate
+              >
+                <div className="inventory-stock-form-grid">
+                  <div className="form-group">
+                    <label htmlFor="stock-quantity">
+                      Add Stock <span className="required">*</span>
+                    </label>
+                    <input
+                      id="stock-quantity"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Enter quantity"
+                      value={stockQuantity}
+                      onChange={(event) => setStockQuantity(event.target.value)}
+                      disabled={addingStock}
+                      required
+                      aria-required="true"
+                      aria-describedby="stock-help"
+                    />
+                    <small id="stock-help">
+                      Current stock: {selectedProduct.stock_quantity} units
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <button
+                      type="submit"
+                      disabled={addingStock}
+                      aria-label={`Add stock to ${selectedProduct.name}`}
+                    >
+                      {addingStock ? "Adding Stock..." : "Add Stock"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </>
         )}
       </section>
 
+      {/* ==========================================================
+          INVENTORY HISTORY
+          ========================================================== */}
       {selectedProduct && (
-        <section className="card">
+        <section className="card" aria-label="Inventory history">
           <div className="card-header">
             <div>
               <h3>Inventory History</h3>
@@ -350,37 +646,40 @@ function Inventory() {
           </div>
 
           {loadingMovements ? (
-            <div className="loading">Loading inventory history...</div>
+            <div className="loading" role="status">
+              Loading inventory history...
+            </div>
           ) : movements.length === 0 ? (
-            <div className="empty-state">
-              No inventory movements recorded for this product yet.
+            <div className="empty-state" role="status">
+              <strong>No movements yet</strong>
+              <span>No inventory movements recorded for this product.</span>
             </div>
           ) : (
             <div className="table-wrapper">
-              <table>
+              <table aria-label="Inventory movement history">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Quantity</th>
-                    <th>Reason</th>
-                    <th>Reference</th>
-                    <th>Notes</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Reason</th>
+                    <th scope="col">Reference</th>
+                    <th scope="col">Notes</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {movements.map((movement) => (
                     <tr key={movement.id}>
-                      <td>{formatDate(movement.created_at)}</td>
+                      <td>{formatDateTime(movement.created_at)}</td>
 
                       <td>
                         <span
-                          className={
-                            movement.movement_type === "IN"
-                              ? "inventory-badge inventory-in"
-                              : "inventory-badge inventory-out"
-                          }
+                          className={`inventory-badge ${movement.movement_type === "IN"
+                              ? "inventory-in"
+                              : "inventory-out"
+                            }`}
+                          aria-label={`${movement.movement_type} movement`}
                         >
                           {movement.movement_type}
                         </span>
@@ -393,17 +692,24 @@ function Inventory() {
                               ? "inventory-quantity-in"
                               : "inventory-quantity-out"
                           }
+                          aria-label={`${movement.movement_type === "IN" ? "Added" : "Removed"} ${movement.quantity} units`}
                         >
                           {movement.movement_type === "IN" ? "+" : "-"}
                           {movement.quantity}
                         </strong>
                       </td>
 
-                      <td>{getMovementLabel(movement)}</td>
+                      <td>
+                        <span className="inventory-reason">
+                          {getMovementLabel(movement)}
+                        </span>
+                      </td>
 
                       <td>
                         {movement.reference_id ? (
-                          <code>{movement.reference_id}</code>
+                          <code title={`Reference ID: ${movement.reference_id}`}>
+                            {movement.reference_id}
+                          </code>
                         ) : (
                           "—"
                         )}
@@ -418,7 +724,7 @@ function Inventory() {
           )}
         </section>
       )}
-    </>
+    </div>
   );
 }
 

@@ -1,0 +1,892 @@
+/* ============================================================
+   DASHBOARD PAGE STYLES
+   
+   This file contains all styles for the Dashboard page including:
+   - Page layout and header with refresh button
+   - KPI cards for today's metrics
+   - Monthly performance cards
+   - Interactive charts (Area and Bar)
+   - Year-to-date and lifetime summaries
+   - Inventory overview cards
+   - Low stock alerts
+   - Recent inventory movements
+   - Monthly history table
+   - Loading and error states
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   DASHBOARD HEADER
+   ============================================================ */
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dashboard-header .dashboard-eyebrow {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dashboard-header h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.dashboard-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   REFRESH BUTTON
+   ============================================================ */
+
+.dashboard-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.dashboard-refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.dashboard-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Spinning animation for refresh icon */
+.dashboard-refresh-button .spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   STATE MESSAGES (Loading, Error, Empty)
+   ============================================================ */
+
+.dashboard-state {
+  display: flex;
+  min-height: 400px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.dashboard-state strong {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 730;
+}
+
+.dashboard-state span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Loading spinner */
+.dashboard-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Error state */
+.dashboard-state-error {
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+}
+
+.dashboard-state-error strong {
+  color: var(--danger);
+}
+
+.dashboard-state-error span {
+  color: var(--danger);
+  opacity: 0.8;
+}
+
+/* Primary button for error retry */
+.dashboard-primary-button {
+  margin-top: 12px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.dashboard-primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Empty state for charts and lists */
+.dashboard-empty {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 6px;
+}
+
+.dashboard-empty.success-empty {
+  color: var(--success);
+}
+
+.dashboard-empty.success-empty strong {
+  color: var(--success);
+}
+
+/* ============================================================
+   KPI CARDS (Today's Metrics)
+   ============================================================ */
+
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-kpi-card {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Decorative background circle */
+.dashboard-kpi-card::after {
+  position: absolute;
+  right: -30px;
+  bottom: -40px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.045;
+  content: "";
+  pointer-events: none;
+}
+
+.dashboard-kpi-card .kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dashboard-kpi-card .kpi-top span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-kpi-card .kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, currentColor 10%, var(--surface));
+  color: currentColor;
+}
+
+.dashboard-kpi-card .kpi-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-kpi-card strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-kpi-card .kpi-foot {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* KPI Card Color Variants */
+.dashboard-kpi-card.kpi-revenue {
+  color: var(--primary);
+}
+
+.dashboard-kpi-card.kpi-expense {
+  color: var(--warning);
+}
+
+.dashboard-kpi-card.kpi-profit {
+  color: var(--success);
+}
+
+.dashboard-kpi-card.kpi-orders {
+  color: var(--purple, #7c3aed);
+}
+
+/* ============================================================
+   SECTION HEADINGS
+   ============================================================ */
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-section-heading .dashboard-section-kicker {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dashboard-section-heading h3 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-section-heading p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ============================================================
+   PERFORMANCE CARDS (This Month)
+   ============================================================ */
+
+.dashboard-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-performance-card {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-performance-card .performance-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-performance-card strong {
+  display: block;
+  margin: 6px 0 8px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+}
+
+/* Growth indicators */
+.dashboard-growth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-growth.positive {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.dashboard-growth.negative {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.dashboard-growth.neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.dashboard-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 0;
+}
+
+.dashboard-panel-header .dashboard-section-kicker {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dashboard-panel-header h3 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-panel-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dashboard-panel-header .panel-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dashboard-panel-header .panel-header-icon.warning {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.dashboard-chart-panel .dashboard-chart {
+  padding: 16px 12px 12px;
+}
+
+/* ============================================================
+   SUMMARY GRID (Year + All Time)
+   ============================================================ */
+
+.dashboard-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.dashboard-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px 20px;
+}
+
+.dashboard-summary-list>div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-summary-list>div:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-summary-list>div span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-summary-list>div strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 730;
+}
+
+.dashboard-summary-list .summary-highlight {
+  padding-top: 14px;
+  border-top: 2px solid var(--border);
+}
+
+.dashboard-summary-list .summary-highlight span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.dashboard-summary-list .summary-highlight strong {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+/* ============================================================
+   INVENTORY OVERVIEW
+   ============================================================ */
+
+.dashboard-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-inventory-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.dashboard-inventory-card .inventory-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.dashboard-inventory-card span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-inventory-card strong {
+  margin: 4px 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-inventory-card small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ============================================================
+   TWO COLUMN LAYOUT (Low Stock + Movements)
+   ============================================================ */
+
+.dashboard-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+/* ============================================================
+   LISTS (Low Stock, Movements)
+   ============================================================ */
+
+.dashboard-list {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0 12px;
+}
+
+.dashboard-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  transition: background 140ms ease;
+}
+
+.dashboard-list-row:hover {
+  background: var(--surface-muted);
+}
+
+.dashboard-list-row .list-product-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dashboard-list-row .list-product-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-list-row .list-product-copy strong {
+  display: block;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dashboard-list-row .list-product-copy span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+/* Stock count badge */
+.dashboard-list-row .stock-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  color: var(--warning);
+  font-size: 14px;
+  font-weight: 730;
+  flex-shrink: 0;
+}
+
+.dashboard-list-row .stock-count.critical {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.dashboard-list-row .stock-count small {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* Movement type icons */
+.dashboard-list-row .movement-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.dashboard-list-row .movement-icon.movement-in {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.dashboard-list-row .movement-icon.movement-out {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.dashboard-list-row .movement-quantity {
+  font-size: 13px;
+  font-weight: 730;
+  flex-shrink: 0;
+}
+
+.dashboard-list-row .movement-quantity.incoming {
+  color: var(--success);
+}
+
+.dashboard-list-row .movement-quantity.outgoing {
+  color: var(--danger);
+}
+
+/* ============================================================
+   MONTHLY HISTORY TABLE
+   ============================================================ */
+
+.dashboard-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.dashboard-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.dashboard-table thead th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.dashboard-table tbody td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.dashboard-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dashboard-table tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.dashboard-table tbody td strong {
+  color: var(--text);
+}
+
+.dashboard-table .dashboard-profit {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.dashboard-table .dashboard-loss {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Large tablets and small laptops */
+@media (max-width: 1200px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tablets and medium screens */
+@media (max-width: 992px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-performance-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-inventory-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-kpi-card strong {
+    font-size: 20px;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .dashboard-page {
+    gap: 18px;
+  }
+
+  .dashboard-header h2 {
+    font-size: 24px;
+  }
+
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-performance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-inventory-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-performance-card strong {
+    font-size: 18px;
+  }
+
+  .dashboard-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 16px 0;
+  }
+
+  .dashboard-panel-header .panel-header-icon {
+    align-self: flex-start;
+  }
+
+  .dashboard-summary-list {
+    padding: 12px 16px 16px;
+  }
+
+  .dashboard-list-row {
+    padding: 10px 16px;
+  }
+
+  .dashboard-table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .dashboard-state {
+    min-height: 300px;
+    padding: 24px;
+  }
+
+  .dashboard-state strong {
+    font-size: 16px;
+  }
+}

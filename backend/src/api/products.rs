@@ -116,6 +116,73 @@ pub async fn list_products(
 }
 
 #[derive(Debug, Deserialize)]
+pub struct UpdateProductRequest {
+    pub name: String,
+    pub sku: Option<String>,
+    pub category: Option<String>,
+    pub cost_price: i64,
+    pub selling_price: i64,
+}
+
+pub async fn update_product(
+    State(state): State<AppState>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(request): Json<UpdateProductRequest>,
+) -> Result<Json<ProductResponse>, (StatusCode, String)> {
+    if request.name.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Product name is required".to_string(),
+        ));
+    }
+
+    if request.cost_price < 0 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Cost price cannot be negative".to_string(),
+        ));
+    }
+
+    if request.selling_price < 0 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Selling price cannot be negative".to_string(),
+        ));
+    }
+
+    let product = crate::repositories::product::update_product(
+        &state.pool,
+        &id,
+        request.name.trim(),
+        request.sku.as_deref(),
+        request.category.as_deref(),
+        request.cost_price,
+        request.selling_price,
+    )
+    .await
+    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+
+    let product = product.ok_or((
+        StatusCode::NOT_FOUND,
+        "Product not found".to_string(),
+    ))?;
+
+    let response = ProductResponse {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        category: product.category,
+        cost_price: product.cost_price,
+        selling_price: product.selling_price,
+        stock_quantity: product.stock_quantity,
+        created_at: product.created_at.to_rfc3339(),
+        updated_at: product.updated_at.to_rfc3339(),
+    };
+
+    Ok(Json(response))
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AddStockRequest {
     pub quantity: i64,
 }

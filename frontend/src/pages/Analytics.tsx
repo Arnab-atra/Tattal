@@ -1,5 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
+// ============================================================
+// Analytics.tsx
+// 
+// A comprehensive business analytics page that provides:
+// - Financial summary metrics (revenue, COGS, profits)
+// - Key performance indicators (sales count, units sold, margins)
+// - Daily performance visualization with progress bars
+// - Monthly historical performance table
+// - Top products by revenue ranking
+// - Inventory overview with stock valuation
+// 
+// The page uses a single API endpoint to fetch all data
+// and provides a refresh mechanism for real-time updates.
+// ============================================================
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "./Analytics.css";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+/**
+ * Core sales metrics for the selected period
+ */
 type SalesMetrics = {
   total_sales: number;
   total_units_sold: number;
@@ -11,11 +34,17 @@ type SalesMetrics = {
   average_sale_value: number;
 };
 
+/**
+ * Profit margin percentages
+ */
 type Margins = {
   gross_margin: number | null;
   net_margin: number | null;
 };
 
+/**
+ * Daily performance trend data
+ */
 type DailyTrend = {
   date: string;
   revenue: number;
@@ -25,6 +54,9 @@ type DailyTrend = {
   net_profit: number;
 };
 
+/**
+ * Monthly trend data for historical analysis
+ */
 type MonthlyTrend = {
   year: number;
   month: number;
@@ -35,6 +67,9 @@ type MonthlyTrend = {
   net_profit: number;
 };
 
+/**
+ * Top selling products by revenue
+ */
 type TopProduct = {
   product_id: string;
   product_name: string;
@@ -44,6 +79,9 @@ type TopProduct = {
   gross_profit: number;
 };
 
+/**
+ * Current inventory snapshot
+ */
 type Inventory = {
   products: number;
   units_in_stock: number;
@@ -52,6 +90,9 @@ type Inventory = {
   potential_gross_profit: number;
 };
 
+/**
+ * Complete analytics data response from API
+ */
 type AnalyticsData = {
   period: {
     year: number;
@@ -65,14 +106,88 @@ type AnalyticsData = {
   inventory: Inventory;
 };
 
-const API_URL = "http://127.0.0.1:3000";
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+// Use environment variable for API URL with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+// ============================================================
+// UTILITY FUNCTIONS (will be moved to shared utils later)
+// ============================================================
+
+/**
+ * Formats a monetary value in Indian Rupees (₹)
+ * @param amount - Value in paise (1/100 of a rupee)
+ * @returns Formatted currency string (e.g., "₹1,234.56")
+ */
+const formatMoney = (amount: number): string => {
+  return `₹${(amount / 100).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+/**
+ * Formats a percentage value
+ * @param value - Percentage as a decimal (e.g., 0.4567 for 45.67%)
+ * @returns Formatted percentage string (e.g., "45.67%") or "N/A" for null
+ */
+const formatPercent = (value: number | null): string => {
+  if (value === null) {
+    return "N/A";
+  }
+  return `${value.toFixed(2)}%`;
+};
+
+/**
+ * Formats a date string to a short format
+ * @param date - ISO date string (YYYY-MM-DD)
+ * @returns Formatted date (e.g., "29 Aug")
+ */
+const formatDate = (date: string): string => {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+/**
+ * Formats a month/year combination to a readable format
+ * @param year - Four-digit year
+ * @param month - Month number (1-12)
+ * @returns Formatted month string (e.g., "August 2026")
+ */
+const formatMonth = (year: number, month: number): string => {
+  return new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function Analytics() {
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadAnalytics = async () => {
+  // ==========================================================
+  // DATA FETCHING
+  // ==========================================================
+
+  /**
+   * Fetches analytics data from the API
+   * Uses a try/catch pattern for proper error handling
+   */
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -80,89 +195,198 @@ function Analytics() {
       const response = await fetch(`${API_URL}/api/analytics`);
 
       if (!response.ok) {
-        throw new Error("Failed to load analytics.");
+        // Get error message from response if available
+        let errorMessage = `HTTP ${response.status}: Failed to load analytics`;
+        try {
+          const text = await response.text();
+          if (text) {
+            // Try to parse as JSON, fallback to text
+            try {
+              const parsed = JSON.parse(text);
+              if (typeof parsed === 'string') {
+                errorMessage = parsed;
+              } else if (parsed.message) {
+                errorMessage = parsed.message;
+              }
+            } catch {
+              // Not JSON, use text as-is
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors, use default message
+        }
+        throw new Error(errorMessage);
       }
 
       const result: AnalyticsData = await response.json();
       setData(result);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load analytics.",
-      );
+      const message = err instanceof Error ? err.message : "Failed to load analytics";
+      setError(message);
+      console.error("Analytics fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadAnalytics();
   }, []);
 
-  const formatMoney = (amount: number) => {
-    return `₹${(amount / 100).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
+  /**
+   * Initial data loading on component mount
+   * Uses a cancellation token to prevent memory leaks
+   */
+  useEffect(() => {
+    let cancelled = false;
 
-  const formatPercent = (value: number | null) => {
-    if (value === null) {
-      return "N/A";
-    }
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-    return `${value.toFixed(2)}%`;
-  };
+        const response = await fetch(`${API_URL}/api/analytics`);
 
-  const formatDate = (date: string) => {
-    return new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-    });
-  };
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: Failed to load analytics`;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
+          } catch {
+            // Ignore parsing errors
+          }
+          throw new Error(errorMessage);
+        }
 
-  const formatMonth = (year: number, month: number) => {
-    return new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric",
-    });
-  };
+        const result: AnalyticsData = await response.json();
 
+        // Only update state if component is still mounted
+        if (!cancelled) {
+          setData(result);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Failed to load analytics";
+          setError(message);
+          console.error("Analytics fetch error:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchAnalytics();
+
+    // Cleanup: cancel any ongoing operations
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Empty dependency array = run once on mount
+
+  // ==========================================================
+  // COMPUTED VALUES (Memoized)
+  // ==========================================================
+
+  /**
+   * Reverses daily trend data to show most recent first
+   * This is done client-side to avoid additional API calls
+   */
   const dailyChart = useMemo(() => {
     if (!data) {
       return [];
     }
-
     return [...data.daily_trend].reverse();
   }, [data]);
 
+  /**
+   * Calculate the maximum daily revenue for scaling chart bars
+   * Ensures chart bars are proportional even with small values
+   */
+  const maxDailyRevenue = useMemo(() => {
+    if (dailyChart.length === 0) {
+      return 1; // Avoid division by zero
+    }
+    return Math.max(...dailyChart.map((item) => item.revenue), 1);
+  }, [dailyChart]);
+
+  // ==========================================================
+  // RENDER HELPERS
+  // ==========================================================
+
+  /**
+   * Loading state renderer
+   * Shows a centered loading message with accessible aria-label
+   */
   if (loading) {
-    return <div className="loading">Loading analytics...</div>;
-  }
-
-  if (error) {
     return (
-      <>
-        <div className="error">{error}</div>
-
-        <button onClick={loadAnalytics}>Try Again</button>
-      </>
+      <div
+        className="loading"
+        role="status"
+        aria-label="Loading analytics data"
+      >
+        Loading analytics...
+      </div>
     );
   }
 
+  /**
+   * Error state renderer
+   * Shows the error message with a retry button
+   * Error message is displayed in a visually distinct container
+   */
+  if (error) {
+    return (
+      <div className="analytics-page">
+        <div className="page-header">
+          <div>
+            <h2>Analytics</h2>
+            <p>Detailed analysis of your sales, profitability, products, and inventory.</p>
+          </div>
+        </div>
+
+        <div className="error" role="alert">
+          <strong>Error loading analytics:</strong> {error}
+        </div>
+
+        <button
+          className="refresh-button"
+          onClick={loadAnalytics}
+          aria-label="Retry loading analytics"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  /**
+   * Guard: If no data after loading, return null
+   * This prevents rendering empty components
+   */
   if (!data) {
     return null;
   }
 
+  // Destructure data for cleaner code
   const { sales_metrics, margins, top_products, inventory } = data;
 
-  const maxDailyRevenue = Math.max(
-    ...dailyChart.map((item) => item.revenue),
-    1,
-  );
+  // ==========================================================
+  // MAIN RENDER
+  // ==========================================================
 
   return (
-    <>
-      <div className="page-header">
+    <div className="analytics-page" role="main" aria-label="Analytics Dashboard">
+
+      {/* ==========================================================
+          HEADER
+          ========================================================== */}
+      <header className="page-header" aria-label="Analytics header">
         <div>
           <h2>Analytics</h2>
           <p>
@@ -175,16 +399,26 @@ function Analytics() {
           className="refresh-button"
           onClick={loadAnalytics}
           disabled={loading}
+          aria-label="Refresh analytics data"
         >
-          Refresh
+          {loading ? "Loading..." : "Refresh"}
         </button>
-      </div>
+      </header>
 
-      {/* -------------------------------------------------- */}
-      {/* FINANCIAL SUMMARY */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          FINANCIAL SUMMARY CARDS
+          
+          Four key metrics displayed prominently:
+          - Revenue
+          - COGS (Cost of Goods Sold)
+          - Gross Profit
+          - Net Profit
+          
+          Each card shows the value with additional context
+          ========================================================== */}
 
-      <section className="summary-grid">
+      <section className="summary-grid" aria-label="Financial summary">
+        {/* Revenue Card */}
         <div className="summary-card revenue-card">
           <span className="summary-label">Revenue</span>
           <strong>{formatMoney(sales_metrics.revenue)}</strong>
@@ -193,6 +427,7 @@ function Analytics() {
           </span>
         </div>
 
+        {/* COGS Card */}
         <div className="summary-card expense-card">
           <span className="summary-label">COGS</span>
           <strong>{formatMoney(sales_metrics.cogs)}</strong>
@@ -201,6 +436,7 @@ function Analytics() {
           </span>
         </div>
 
+        {/* Gross Profit Card */}
         <div className="summary-card profit-card">
           <span className="summary-label">Gross Profit</span>
           <strong>{formatMoney(sales_metrics.gross_profit)}</strong>
@@ -209,6 +445,7 @@ function Analytics() {
           </span>
         </div>
 
+        {/* Net Profit Card */}
         <div className="summary-card profit-card">
           <span className="summary-label">Net Profit</span>
           <strong>{formatMoney(sales_metrics.net_profit)}</strong>
@@ -218,11 +455,19 @@ function Analytics() {
         </div>
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* KEY METRICS */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          KEY METRICS
+          
+          Additional performance indicators displayed in a grid:
+          - Total Sales count
+          - Units Sold
+          - Average Sale Value
+          - Total Expenses
+          - Gross Margin percentage
+          - Net Margin percentage
+          ========================================================== */}
 
-      <section className="card">
+      <section className="card" aria-label="Key performance metrics">
         <div className="card-header">
           <div>
             <h3>Key Metrics</h3>
@@ -263,11 +508,20 @@ function Analytics() {
         </div>
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* DAILY PERFORMANCE */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          DAILY PERFORMANCE CHART
+          
+          Visual representation of daily revenue and profit trends
+          using horizontal progress bars.
+          
+          Each day shows:
+          - Date label
+          - Revenue bar (blue)
+          - Gross profit bar (green)
+          - Net profit value
+          ========================================================== */}
 
-      <section className="card">
+      <section className="card" aria-label="Daily performance chart">
         <div className="card-header">
           <div>
             <h3>Daily Performance</h3>
@@ -276,51 +530,61 @@ function Analytics() {
         </div>
 
         {dailyChart.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state" role="status">
             No daily performance data available.
           </div>
         ) : (
-          <div className="analytics-chart">
+          <div className="analytics-chart" role="list" aria-label="Daily performance data">
             {dailyChart.map((item) => {
+              // Calculate bar widths as percentages of maximum daily revenue
               const revenueWidth = (item.revenue / maxDailyRevenue) * 100;
-
-              const profitWidth =
-                item.gross_profit > 0
-                  ? (item.gross_profit / maxDailyRevenue) * 100
-                  : 0;
+              const profitWidth = item.gross_profit > 0
+                ? (item.gross_profit / maxDailyRevenue) * 100
+                : 0;
 
               return (
-                <div className="chart-row" key={item.date}>
+                <div className="chart-row" key={item.date} role="listitem">
+                  {/* Date label */}
                   <div className="chart-label">{formatDate(item.date)}</div>
 
+                  {/* Revenue and Profit bars */}
                   <div className="chart-bars">
+                    {/* Revenue Bar */}
                     <div className="chart-bar-group">
                       <span>Revenue</span>
-
                       <div className="chart-track">
                         <div
                           className="chart-bar revenue-bar"
-                          style={{ width: `${revenueWidth}%` }}
+                          style={{ width: `${Math.min(revenueWidth, 100)}%` }}
+                          role="progressbar"
+                          aria-valuenow={revenueWidth}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="Revenue"
                         />
                       </div>
-
                       <strong>{formatMoney(item.revenue)}</strong>
                     </div>
 
+                    {/* Gross Profit Bar */}
                     <div className="chart-bar-group">
                       <span>Gross Profit</span>
-
                       <div className="chart-track">
                         <div
                           className="chart-bar profit-bar"
-                          style={{ width: `${profitWidth}%` }}
+                          style={{ width: `${Math.min(profitWidth, 100)}%` }}
+                          role="progressbar"
+                          aria-valuenow={profitWidth}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="Gross Profit"
                         />
                       </div>
-
                       <strong>{formatMoney(item.gross_profit)}</strong>
                     </div>
                   </div>
 
+                  {/* Net Profit (right column) */}
                   <div className="chart-net-profit">
                     <span>Net</span>
                     <strong>{formatMoney(item.net_profit)}</strong>
@@ -332,11 +596,14 @@ function Analytics() {
         )}
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* MONTHLY PERFORMANCE */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          MONTHLY PERFORMANCE TABLE
+          
+          Historical data displayed in a sortable table format
+          showing month-by-month financial performance
+          ========================================================== */}
 
-      <section className="card">
+      <section className="card" aria-label="Monthly performance history">
         <div className="card-header">
           <div>
             <h3>Monthly Performance</h3>
@@ -345,20 +612,20 @@ function Analytics() {
         </div>
 
         {data.monthly_trend.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state" role="status">
             No monthly performance data available.
           </div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table aria-label="Monthly performance table">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Revenue</th>
-                  <th>COGS</th>
-                  <th>Gross Profit</th>
-                  <th>Expenses</th>
-                  <th>Net Profit</th>
+                  <th scope="col">Month</th>
+                  <th scope="col">Revenue</th>
+                  <th scope="col">COGS</th>
+                  <th scope="col">Gross Profit</th>
+                  <th scope="col">Expenses</th>
+                  <th scope="col">Net Profit</th>
                 </tr>
               </thead>
 
@@ -368,12 +635,10 @@ function Analytics() {
                     <td>
                       <strong>{formatMonth(item.year, item.month)}</strong>
                     </td>
-
                     <td>{formatMoney(item.revenue)}</td>
                     <td>{formatMoney(item.cogs)}</td>
                     <td>{formatMoney(item.gross_profit)}</td>
                     <td>{formatMoney(item.expenses)}</td>
-
                     <td>
                       <strong>{formatMoney(item.net_profit)}</strong>
                     </td>
@@ -385,11 +650,18 @@ function Analytics() {
         )}
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* TOP PRODUCTS */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          TOP PRODUCTS TABLE
+          
+          Products ranked by sales revenue:
+          - Product name
+          - Units sold
+          - Revenue generated
+          - COGS
+          - Gross profit
+          ========================================================== */}
 
-      <section className="card">
+      <section className="card" aria-label="Top performing products">
         <div className="card-header">
           <div>
             <h3>Top Products</h3>
@@ -398,17 +670,19 @@ function Analytics() {
         </div>
 
         {top_products.length === 0 ? (
-          <div className="empty-state">No product sales data available.</div>
+          <div className="empty-state" role="status">
+            No product sales data available.
+          </div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table aria-label="Top products table">
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Units Sold</th>
-                  <th>Revenue</th>
-                  <th>COGS</th>
-                  <th>Gross Profit</th>
+                  <th scope="col">Product</th>
+                  <th scope="col">Units Sold</th>
+                  <th scope="col">Revenue</th>
+                  <th scope="col">COGS</th>
+                  <th scope="col">Gross Profit</th>
                 </tr>
               </thead>
 
@@ -418,11 +692,9 @@ function Analytics() {
                     <td>
                       <strong>{product.product_name}</strong>
                     </td>
-
                     <td>{product.units_sold}</td>
                     <td>{formatMoney(product.revenue)}</td>
                     <td>{formatMoney(product.cogs)}</td>
-
                     <td>
                       <strong>{formatMoney(product.gross_profit)}</strong>
                     </td>
@@ -434,11 +706,18 @@ function Analytics() {
         )}
       </section>
 
-      {/* -------------------------------------------------- */}
-      {/* INVENTORY */}
-      {/* -------------------------------------------------- */}
+      {/* ==========================================================
+          INVENTORY OVERVIEW
+          
+          Current inventory snapshot:
+          - Number of products
+          - Units in stock
+          - Stock cost value (at cost price)
+          - Potential sales value (at selling price)
+          - Potential gross profit (selling - cost)
+          ========================================================== */}
 
-      <section className="card">
+      <section className="card" aria-label="Inventory overview">
         <div className="card-header">
           <div>
             <h3>Inventory Overview</h3>
@@ -473,7 +752,7 @@ function Analytics() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 

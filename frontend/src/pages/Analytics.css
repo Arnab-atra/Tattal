@@ -1,0 +1,492 @@
+/* ============================================================
+   ANALYTICS PAGE STYLES
+   
+   This file contains all styles for the Analytics page including:
+   - Page layout and header
+   - Summary cards for key metrics
+   - Performance cards and metrics grid
+   - Daily performance chart bars
+   - Monthly performance table
+   - Top products table
+   - Inventory overview
+   - Responsive breakpoints
+   ============================================================ */
+
+.analytics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.analytics-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.analytics-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.analytics-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   REFRESH BUTTON
+   ============================================================ */
+
+.analytics-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.analytics-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.analytics-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ============================================================
+   SUMMARY GRID - Key Metrics Cards
+   ============================================================ */
+
+.analytics-page .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analytics-page .summary-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Decorative background circle for visual interest */
+.analytics-page .summary-card::after {
+  position: absolute;
+  right: -35px;
+  bottom: -45px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.045;
+  content: "";
+  pointer-events: none;
+}
+
+.analytics-page .summary-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-page .summary-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 25px;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.analytics-page .summary-detail {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* Color variants for different metric types */
+.analytics-page .revenue-card {
+  color: var(--primary);
+}
+
+.analytics-page .expense-card {
+  color: var(--warning);
+}
+
+.analytics-page .profit-card {
+  color: var(--success);
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.analytics-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.analytics-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 20px 0;
+}
+
+.analytics-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.analytics-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   METRICS GRID
+   ============================================================ */
+
+.analytics-page .metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 20px 20px;
+}
+
+.analytics-page .metric {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-muted);
+}
+
+.analytics-page .metric span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.analytics-page .metric strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 730;
+  letter-spacing: -0.025em;
+}
+
+/* ============================================================
+   DAILY PERFORMANCE CHART
+   ============================================================ */
+
+.analytics-page .analytics-chart {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 20px;
+}
+
+/* Each row represents a single day's data */
+.analytics-page .chart-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 90px;
+  align-items: center;
+  min-height: 92px;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.analytics-page .chart-row:last-child {
+  border-bottom: 0;
+}
+
+/* Day label (e.g., "29 Aug") */
+.analytics-page .chart-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+/* Container for revenue and profit bars */
+.analytics-page .chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* Individual bar group (revenue or profit) */
+.analytics-page .chart-bar-group {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 82px;
+  align-items: center;
+  gap: 10px;
+}
+
+.analytics-page .chart-bar-group>span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+/* Progress bar track */
+.analytics-page .chart-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+/* Filled portion of the progress bar */
+.analytics-page .chart-bar {
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  transition: width 300ms ease;
+}
+
+/* Color variants for chart bars */
+.analytics-page .revenue-bar {
+  background: var(--primary);
+}
+
+.analytics-page .profit-bar {
+  background: var(--success);
+}
+
+/* Value display (e.g., "₹1,234.56") */
+.analytics-page .chart-bar-group strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Net profit column on the right */
+.analytics-page .chart-net-profit {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.analytics-page .chart-net-profit span {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.analytics-page .chart-net-profit strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+.analytics-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.analytics-page table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+}
+
+.analytics-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.analytics-page td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.analytics-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.analytics-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.analytics-page td strong {
+  color: var(--text);
+}
+
+.analytics-page td:last-child strong {
+  color: var(--success);
+}
+
+/* ============================================================
+   EMPTY STATES & STATUS MESSAGES
+   ============================================================ */
+
+/* Empty state - shown when no data is available */
+.analytics-page .empty-state {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Loading state - shown while data is being fetched */
+.analytics-page .loading {
+  display: flex;
+  min-height: 400px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Error state - shown when data fetch fails */
+.analytics-page .error {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets and small laptops */
+@media (max-width: 1200px) {
+  .analytics-page .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-page .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 800px) {
+  .analytics-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .analytics-page .refresh-button {
+    width: 100%;
+  }
+
+  .analytics-page .chart-row {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+
+  /* Hide net profit on mobile for cleaner layout */
+  .analytics-page .chart-net-profit {
+    display: none;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 600px) {
+  .analytics-page {
+    gap: 18px;
+  }
+
+  .analytics-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .analytics-page .summary-grid,
+  .analytics-page .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-page .summary-card {
+    padding: 17px;
+  }
+
+  .analytics-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .analytics-page .metric-grid {
+    padding: 14px 16px 16px;
+  }
+
+  .analytics-page .analytics-chart {
+    padding: 10px 16px;
+  }
+
+  .analytics-page .chart-row {
+    grid-template-columns: 55px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .analytics-page .chart-bar-group {
+    grid-template-columns: 70px minmax(0, 1fr) 70px;
+    gap: 7px;
+  }
+
+  .analytics-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+}

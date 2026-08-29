@@ -1,0 +1,537 @@
+/* ============================================================
+   REPORTS PAGE STYLES
+   
+   This file contains all styles for the Reports page including:
+   - Page layout and header
+   - Report period selector
+   - Period summary cards
+   - Profit analysis metrics
+   - Growth analysis with indicators
+   - Monthly history table
+   - Business overview metrics
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.reports-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.reports-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.reports-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Refresh Button */
+.reports-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.reports-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.reports-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.reports-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.reports-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.reports-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.reports-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.reports-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   FORM STYLES
+   ============================================================ */
+
+.reports-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px 20px 20px;
+}
+
+.reports-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reports-page .form-group select {
+  width: 100%;
+  max-width: 300px;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.reports-page .form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.reports-page .form-group select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ============================================================
+   SUMMARY GRID
+   ============================================================ */
+
+.reports-page .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 20px 20px;
+}
+
+.reports-page .summary-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-muted);
+}
+
+/* Decorative background circle */
+.reports-page .summary-card::after {
+  position: absolute;
+  right: -25px;
+  bottom: -35px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.045;
+  content: "";
+  pointer-events: none;
+}
+
+.reports-page .summary-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reports-page .summary-card strong {
+  display: block;
+  margin: 6px 0 8px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+}
+
+/* Growth indicator inside summary card */
+.reports-page .summary-card .growth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reports-page .summary-card .growth.positive {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.reports-page .summary-card .growth.negative {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.reports-page .summary-card .growth.neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+/* Color variants */
+.reports-page .summary-card.revenue-card {
+  color: var(--primary);
+}
+
+.reports-page .summary-card.expense-card {
+  color: var(--warning);
+}
+
+.reports-page .summary-card.profit-card {
+  color: var(--success);
+}
+
+/* ============================================================
+   METRICS GRID
+   ============================================================ */
+
+.reports-page .metric-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 20px 20px;
+}
+
+.reports-page .metric {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.reports-page .metric span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.reports-page .metric strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 730;
+  letter-spacing: -0.025em;
+}
+
+/* Growth inside metric card */
+.reports-page .metric .growth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reports-page .metric .growth.positive {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.reports-page .metric .growth.negative {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.reports-page .metric .growth.neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   PROFIT ANALYSIS METRICS
+   ============================================================ */
+
+.reports-page .profit-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 20px 20px;
+}
+
+/* ============================================================
+   TABLE STYLES
+   ============================================================ */
+
+.reports-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.reports-page table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.reports-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.reports-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.reports-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.reports-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.reports-page td strong {
+  color: var(--text);
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.reports-page .empty-state {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.reports-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.reports-page .loading {
+  display: flex;
+  min-height: 400px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Large tablets */
+@media (max-width: 1200px) {
+  .reports-page .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reports-page .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reports-page .profit-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .reports-page .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-page .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-page .profit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .reports-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reports-page .refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .reports-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-page .form-group select {
+    max-width: 100%;
+  }
+
+  .reports-page .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reports-page .metric-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reports-page .profit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .reports-page {
+    gap: 18px;
+  }
+
+  .reports-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .reports-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .reports-page .form-group {
+    padding: 14px 16px 16px;
+  }
+
+  .reports-page .summary-grid {
+    grid-template-columns: 1fr;
+    padding: 12px 16px 16px;
+  }
+
+  .reports-page .metric-grid {
+    grid-template-columns: 1fr;
+    padding: 12px 16px 16px;
+  }
+
+  .reports-page .profit-grid {
+    grid-template-columns: 1fr;
+    padding: 12px 16px 16px;
+  }
+
+  .reports-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .reports-page .summary-card strong {
+    font-size: 18px;
+  }
+
+  .reports-page .metric strong {
+    font-size: 16px;
+  }
+}

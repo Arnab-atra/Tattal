@@ -1,0 +1,714 @@
+/* ============================================================
+   CUSTOMERS PAGE STYLES
+   
+   This file contains all styles for the Customers page including:
+   - Page layout and header
+   - Customer create/edit form
+   - Customer list table
+   - Customer detail view
+   - Purchase history
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.customers-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.customers-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.customers-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.customers-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   HEADER ACTIONS (Buttons)
+   ============================================================ */
+
+.customers-page .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Refresh Button */
+.customers-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.customers-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.customers-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Primary Action Button (Add Customer) */
+.customers-page .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.customers-page .primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.customers-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Secondary Action Button (Cancel, View, Edit) */
+.customers-page .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.customers-page .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.customers-page .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Danger Button (Delete - if needed) */
+.customers-page .danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.customers-page .danger-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 15%, var(--surface));
+  border-color: var(--danger);
+}
+
+.customers-page .danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.customers-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Success message */
+.customers-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.customers-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.customers-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.customers-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.customers-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   CUSTOMER CREATE/EDIT FORM
+   ============================================================ */
+
+.customers-page .customer-create-card {
+  border-color: var(--primary);
+  border-width: 2px;
+}
+
+.customers-page .customer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+/* Form grid - 3 columns on desktop */
+.customers-page .customer-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Form groups */
+.customers-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.customers-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.customers-page .form-group label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.customers-page .form-group input,
+.customers-page .form-group textarea,
+.customers-page .form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.customers-page .form-group input,
+.customers-page .form-group select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.customers-page .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  padding: 11px;
+}
+
+.customers-page .form-group input:focus,
+.customers-page .form-group textarea:focus,
+.customers-page .form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.customers-page .form-group input:disabled,
+.customers-page .form-group textarea:disabled,
+.customers-page .form-group select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.customers-page .form-group small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* Form actions (Cancel/Save buttons) */
+.customers-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.customers-page .form-actions button {
+  min-height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.customers-page .form-actions button[type="submit"] {
+  background: var(--primary);
+  color: white;
+}
+
+.customers-page .form-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.customers-page .form-actions button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.customers-page .form-actions .cancel-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.customers-page .form-actions .cancel-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.customers-page .form-actions .cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   CUSTOMER LIST
+   ============================================================ */
+
+/* Search input */
+.customers-page .customer-search {
+  min-width: 200px;
+}
+
+.customers-page .customer-search input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.customers-page .customer-search input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.customers-page .customer-search input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Table wrapper - scrollable on small screens */
+.customers-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.customers-page table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+}
+
+.customers-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.customers-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.customers-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.customers-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.customers-page td strong {
+  color: var(--text);
+}
+
+/* Action buttons in table */
+.customers-page td .action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.customers-page td .action-buttons .secondary-button {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 10px;
+}
+
+/* ============================================================
+   CUSTOMER DETAIL VIEW
+   ============================================================ */
+
+.customers-page .customer-detail-card {
+  border-color: var(--primary);
+  border-width: 2px;
+}
+
+/* Customer info grid */
+.customers-page .customer-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.customers-page .customer-info-grid>div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customers-page .customer-info-grid span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.customers-page .customer-info-grid strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+}
+
+/* Profit/Loss colors for outstanding balance */
+.customers-page .customer-info-grid .profit {
+  color: var(--success);
+}
+
+.customers-page .customer-info-grid .loss {
+  color: var(--danger);
+}
+
+/* Customer notes section */
+.customers-page .customer-notes {
+  padding: 0 20px 20px;
+}
+
+.customers-page .customer-notes strong {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.customers-page .customer-notes p {
+  margin: 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Purchase history header */
+.customers-page .customer-history-header {
+  padding-top: 0;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+/* Status badges for payment status */
+.customers-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.customers-page .status-badge.paid {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.customers-page .status-badge.due {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.customers-page .status-badge.partial {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.customers-page .empty-state {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.customers-page .empty-state .empty-icon {
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
+.customers-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.customers-page .loading {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 992px) {
+  .customers-page .customer-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .customers-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customers-page .page-header-actions {
+    width: 100%;
+  }
+
+  .customers-page .page-header-actions button {
+    flex: 1;
+  }
+
+  .customers-page .customer-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customers-page .customer-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .customers-page .customer-search {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .customers-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customers-page .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .customers-page .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .customers-page {
+    gap: 18px;
+  }
+
+  .customers-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .customers-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .customers-page .customer-form {
+    padding: 16px;
+  }
+
+  .customers-page .customer-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customers-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .customers-page .customer-info-grid {
+    padding: 16px;
+  }
+
+  .customers-page .customer-notes {
+    padding: 0 16px 16px;
+  }
+
+  .customers-page td .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .customers-page td .action-buttons .secondary-button {
+    width: 100%;
+  }
+}

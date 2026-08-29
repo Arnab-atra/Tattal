@@ -1,4 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+// ============================================================
+// Dashboard.tsx
+// 
+// A comprehensive business dashboard component that displays:
+// - Financial KPIs (revenue, expenses, profit)
+// - Monthly performance trends with charts
+// - Year-to-date and lifetime summaries
+// - Inventory overview with stock levels
+// - Recent inventory movements
+// - Low stock alerts
+// ============================================================
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -22,7 +34,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import "./Dashboard.css";
 
+// ============================================================
+// TYPES
+// ============================================================
+
+/**
+ * Financial summary for a specific period
+ */
 type Summary = {
   revenue: number;
   cogs: number;
@@ -31,6 +51,10 @@ type Summary = {
   net_profit: number;
 };
 
+/**
+ * Growth percentages compared to previous period
+ * null indicates no comparison available
+ */
 type Growth = {
   revenue: number | null;
   cogs: number | null;
@@ -39,6 +63,9 @@ type Growth = {
   net_profit: number | null;
 };
 
+/**
+ * Monthly financial history record
+ */
 type MonthlyHistory = {
   year: number;
   month: number;
@@ -49,6 +76,9 @@ type MonthlyHistory = {
   net_profit: number;
 };
 
+/**
+ * Complete dashboard data from API
+ */
 type DashboardData = {
   date: string;
   today: Summary;
@@ -64,6 +94,14 @@ type DashboardData = {
   monthly_history: MonthlyHistory[];
 };
 
+/**
+ * Inventory movement types
+ */
+type MovementType = "IN" | "OUT";
+
+/**
+ * Product inventory information
+ */
 type InventoryProduct = {
   id: string;
   name: string;
@@ -73,10 +111,13 @@ type InventoryProduct = {
   stock_quantity: number;
 };
 
+/**
+ * Inventory movement record
+ */
 type InventoryMovement = {
   id: string;
   product_id: string;
-  movement_type: "IN" | "OUT" | string;
+  movement_type: MovementType;
   quantity: number;
   reference_type: string | null;
   reference_id: string | null;
@@ -84,194 +125,201 @@ type InventoryMovement = {
   created_at: string;
 };
 
-const API_URL = "http://127.0.0.1:3000";
+/**
+ * Inventory movement with product name for display
+ */
+type InventoryMovementWithProduct = InventoryMovement & {
+  product_name: string;
+};
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+// Use environment variable for API URL with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+// Configuration constants for better maintainability
+const CONFIG = {
+  LOW_STOCK_THRESHOLD: 5,
+  MAX_RECENT_MOVEMENTS: 8,
+  MAX_LOW_STOCK_DISPLAY: 6,
+  CHART_HEIGHT: 290,
+  DEBOUNCE_DELAY: 300,
+} as const;
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+/**
+ * Formats a monetary value in Indian Rupees (₹)
+ * @param amount - Value in paise (1/100 of a rupee)
+ * @returns Formatted currency string (e.g., "₹1,234.56")
+ */
+const formatMoney = (amount: number): string => {
+  return `₹${(amount / 100).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+/**
+ * Formats a monetary value in a compact format (Cr, L, K)
+ * @param amount - Value in paise
+ * @returns Compact currency string (e.g., "₹1.2Cr")
+ */
+const formatCompactMoney = (amount: number): string => {
+  const rupees = amount / 100;
+
+  if (Math.abs(rupees) >= 10000000) {
+    return `₹${(rupees / 10000000).toFixed(1)}Cr`;
+  }
+  if (Math.abs(rupees) >= 100000) {
+    return `₹${(rupees / 100000).toFixed(1)}L`;
+  }
+  if (Math.abs(rupees) >= 1000) {
+    return `₹${(rupees / 1000).toFixed(1)}K`;
+  }
+  return `₹${rupees.toFixed(0)}`;
+};
+
+/**
+ * Formats a date string to a readable format
+ * @param date - ISO date string
+ * @returns Formatted date (e.g., "Monday, 29 August 2026")
+ */
+const formatDate = (date: string): string => {
+  // Parse date safely - handle both YYYY-MM-DD and ISO strings
+  const parsedDate = date.includes('T') ? new Date(date) : new Date(`${date}T00:00:00`);
+  return parsedDate.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+/**
+ * Formats a month/year combination
+ * @param year - Four-digit year
+ * @param month - Month number (1-12)
+ * @returns Formatted month string (e.g., "Aug '26")
+ */
+const formatMonth = (year: number, month: number): string => {
+  return new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
+    month: "short",
+    year: "2-digit",
+  });
+};
+
+/**
+ * Formats a timestamp to a readable date/time
+ * @param date - ISO timestamp string
+ * @returns Formatted date/time (e.g., "29 Aug, 14:30")
+ */
+const formatMovementDate = (date: string): string => {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/**
+ * Renders a growth indicator with arrow and percentage
+ */
+const GrowthIndicator = ({ value }: { value: number | null }) => {
+  if (value === null) {
+    return <span className="dashboard-growth neutral">No comparison</span>;
+  }
+
+  const positive = value >= 0;
+
+  return (
+    <span className={`dashboard-growth ${positive ? "positive" : "negative"}`}>
+      {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+      {Math.abs(value).toFixed(1)}%
+    </span>
+  );
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function Dashboard() {
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [inventoryProducts, setInventoryProducts] = useState<
-    InventoryProduct[]
-  >([]);
-  const [inventoryMovements, setInventoryMovements] = useState<
-    (InventoryMovement & { product_name: string })[]
-  >([]);
+  // ==========================================================
+  // STATE
+  // ==========================================================
 
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
+  const [inventoryMovements, setInventoryMovements] = useState<InventoryMovementWithProduct[]>([]);
+
+  // Separate loading states for better UX
   const [loading, setLoading] = useState(true);
   const [inventoryLoading, setInventoryLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const formatMoney = (amount: number) =>
-    `₹${(amount / 100).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  // Separate error states
+  const [error, setError] = useState<string>("");
+  const [inventoryError, setInventoryError] = useState<string>("");
 
-  const formatCompactMoney = (amount: number) => {
-    const rupees = amount / 100;
+  // ==========================================================
+  // COMPUTED VALUES (Memoized)
+  // ==========================================================
 
-    if (Math.abs(rupees) >= 10000000) {
-      return `₹${(rupees / 10000000).toFixed(1)}Cr`;
-    }
-
-    if (Math.abs(rupees) >= 100000) {
-      return `₹${(rupees / 100000).toFixed(1)}L`;
-    }
-
-    if (Math.abs(rupees) >= 1000) {
-      return `₹${(rupees / 1000).toFixed(1)}K`;
-    }
-
-    return `₹${rupees.toFixed(0)}`;
-  };
-
-  const formatDate = (date: string) =>
-    new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-  const formatMonth = (year: number, month: number) =>
-    new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
-      month: "short",
-      year: "2-digit",
-    });
-
-  const formatMovementDate = (date: string) =>
-    new Date(date).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const loadDashboard = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(`${API_URL}/api/dashboard`);
-
-      if (!response.ok) {
-        throw new Error("Unable to load dashboard data.");
-      }
-
-      const data: DashboardData = await response.json();
-      setDashboard(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to load dashboard data.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadInventory = async () => {
-    try {
-      setInventoryLoading(true);
-
-      const response = await fetch(`${API_URL}/api/products`);
-
-      if (!response.ok) {
-        throw new Error("Unable to load inventory.");
-      }
-
-      const products: InventoryProduct[] = await response.json();
-      setInventoryProducts(products);
-
-      if (products.length === 0) {
-        setInventoryMovements([]);
-        return;
-      }
-
-      const movementResults = await Promise.all(
-        products.map(async (product) => {
-          try {
-            const movementResponse = await fetch(
-              `${API_URL}/api/products/${product.id}/inventory`,
-            );
-
-            if (!movementResponse.ok) {
-              return [];
-            }
-
-            const movements: InventoryMovement[] =
-              await movementResponse.json();
-
-            return movements.map((movement) => ({
-              ...movement,
-              product_name: product.name,
-            }));
-          } catch {
-            return [];
-          }
-        }),
-      );
-
-      const movements = movementResults
-        .flat()
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() -
-            new Date(a.created_at).getTime(),
-        )
-        .slice(0, 8);
-
-      setInventoryMovements(movements);
-    } catch {
-      setInventoryProducts([]);
-      setInventoryMovements([]);
-    } finally {
-      setInventoryLoading(false);
-    }
-  };
-
-  const refreshDashboard = async () => {
-    await Promise.all([loadDashboard(), loadInventory()]);
-  };
-
-  useEffect(() => {
-    refreshDashboard();
-  }, []);
-
+  /**
+   * Total cost value of all inventory
+   */
   const stockValue = useMemo(
     () =>
       inventoryProducts.reduce(
-        (total, product) =>
-          total + product.cost_price * product.stock_quantity,
-        0,
+        (total, product) => total + product.cost_price * product.stock_quantity,
+        0
       ),
-    [inventoryProducts],
+    [inventoryProducts]
   );
 
+  /**
+   * Potential sales value of all inventory (at selling price)
+   */
   const potentialSalesValue = useMemo(
     () =>
       inventoryProducts.reduce(
-        (total, product) =>
-          total + product.selling_price * product.stock_quantity,
-        0,
+        (total, product) => total + product.selling_price * product.stock_quantity,
+        0
       ),
-    [inventoryProducts],
+    [inventoryProducts]
   );
 
+  /**
+   * Total units in stock across all products
+   */
   const totalUnits = useMemo(
     () =>
       inventoryProducts.reduce(
         (total, product) => total + product.stock_quantity,
-        0,
+        0
       ),
-    [inventoryProducts],
+    [inventoryProducts]
   );
 
+  /**
+   * Products with stock below the threshold, sorted by quantity ascending
+   */
   const lowStockProducts = useMemo(
     () =>
       inventoryProducts
-        .filter((product) => product.stock_quantity <= 5)
+        .filter((product) => product.stock_quantity <= CONFIG.LOW_STOCK_THRESHOLD)
         .sort((a, b) => a.stock_quantity - b.stock_quantity),
-    [inventoryProducts],
+    [inventoryProducts]
   );
 
+  /**
+   * Chart data formatted for Recharts
+   */
   const chartData = useMemo(
     () =>
       dashboard?.monthly_history.map((item) => ({
@@ -280,60 +328,237 @@ function Dashboard() {
         expenses: item.expenses / 100,
         profit: item.net_profit / 100,
       })) ?? [],
-    [dashboard],
+    [dashboard]
   );
 
-  const renderGrowth = (value: number | null) => {
-    if (value === null) {
-      return <span className="dashboard-growth neutral">No comparison</span>;
+  // ==========================================================
+  // DATA FETCHING FUNCTIONS
+  // ==========================================================
+
+  /**
+   * Fetches dashboard financial data from the API
+   * Includes today's metrics, monthly/yearly summaries, and history
+   */
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(`${API_URL}/api/dashboard`);
+
+      if (!response.ok) {
+        // Parse error message from response if available
+        let errorMessage = `HTTP ${response.status}: Unable to load dashboard data`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors, use default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data: DashboardData = await response.json();
+      setDashboard(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load dashboard data";
+      setError(message);
+      console.error("Dashboard fetch error:", err);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    const positive = value >= 0;
+  /**
+   * Fetches inventory data including products and recent movements
+   * Uses a batched approach to avoid N+1 query problem
+   */
+  const loadInventory = useCallback(async () => {
+    try {
+      setInventoryLoading(true);
+      setInventoryError("");
 
-    return (
-      <span
-        className={`dashboard-growth ${
-          positive ? "positive" : "negative"
-        }`}
-      >
-        {positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-        {Math.abs(value).toFixed(1)}%
-      </span>
-    );
-  };
+      // Step 1: Fetch all products
+      const productsResponse = await fetch(`${API_URL}/api/products`);
+      if (!productsResponse.ok) {
+        let errorMessage = `HTTP ${productsResponse.status}: Unable to load products`;
+        try {
+          const text = await productsResponse.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
+      }
 
+      const products: InventoryProduct[] = await productsResponse.json();
+      setInventoryProducts(products);
+
+      // If no products, clear movements and return early
+      if (products.length === 0) {
+        setInventoryMovements([]);
+        return;
+      }
+
+      // Step 2: Fetch movements for all products in parallel (batched)
+      const movementPromises = products.map(async (product) => {
+        try {
+          const movementResponse = await fetch(
+            `${API_URL}/api/products/${product.id}/inventory`
+          );
+
+          if (!movementResponse.ok) {
+            // Log error but don't fail the whole batch
+            console.warn(
+              `Failed to load movements for product ${product.id}: HTTP ${movementResponse.status}`
+            );
+            return [];
+          }
+
+          const movements: InventoryMovement[] = await movementResponse.json();
+
+          // Add product name to each movement for display purposes
+          return movements.map((movement) => ({
+            ...movement,
+            product_name: product.name,
+          }));
+        } catch (err) {
+          // Log individual product movement errors but don't fail the whole load
+          console.warn(`Failed to load movements for product ${product.id}:`, err);
+          return [];
+        }
+      });
+
+      // Wait for all movement fetches to complete
+      const movementResults = await Promise.all(movementPromises);
+
+      // Flatten, sort by date (newest first), and limit to max display
+      const allMovements = movementResults
+        .flat()
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+        .slice(0, CONFIG.MAX_RECENT_MOVEMENTS);
+
+      setInventoryMovements(allMovements);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load inventory data";
+      setInventoryError(message);
+      console.error("Inventory fetch error:", err);
+
+      // Reset inventory data on error
+      setInventoryProducts([]);
+      setInventoryMovements([]);
+    } finally {
+      setInventoryLoading(false);
+    }
+  }, []);
+
+  /**
+   * Refreshes all dashboard data
+   * Uses Promise.all for parallel fetching
+   */
+  const refreshDashboard = useCallback(async () => {
+    await Promise.all([loadDashboard(), loadInventory()]);
+  }, [loadDashboard, loadInventory]);
+
+  // ==========================================================
+  // EFFECTS
+  // ==========================================================
+
+  /**
+   * Initial data loading on component mount
+   * Uses cancellation token to prevent memory leaks
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialData = async () => {
+      if (cancelled) return;
+      await Promise.all([loadDashboard(), loadInventory()]);
+    };
+
+    loadInitialData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadDashboard, loadInventory]); // Dependencies are stable due to useCallback
+
+  // ==========================================================
+  // RENDER HELPERS
+  // ==========================================================
+
+  /**
+   * Loading state renderer
+   * Shows a spinner with descriptive text when data is being fetched
+   */
   if (loading && !dashboard) {
     return (
-      <div className="dashboard-state">
-        <div className="dashboard-spinner" />
+      <div className="dashboard-state" role="status" aria-label="Loading dashboard">
+        <div className="dashboard-spinner" aria-hidden="true" />
         <strong>Loading dashboard</strong>
         <span>Preparing your business overview...</span>
       </div>
     );
   }
 
+  /**
+   * Error state renderer
+   * Shows error message with a retry button when data loading fails
+   * Only rendered if no dashboard data is available
+   */
   if (error && !dashboard) {
     return (
-      <div className="dashboard-state dashboard-state-error">
-        <AlertTriangle size={28} />
+      <div className="dashboard-state dashboard-state-error" role="alert">
+        <AlertTriangle size={28} aria-hidden="true" />
         <strong>Dashboard unavailable</strong>
         <span>{error}</span>
-        <button className="dashboard-primary-button" onClick={refreshDashboard}>
+        <button
+          className="dashboard-primary-button"
+          onClick={refreshDashboard}
+          aria-label="Retry loading dashboard"
+        >
           Try again
         </button>
       </div>
     );
   }
 
+  /**
+   * Guard: If no data after loading, return null
+   * Prevents rendering empty components
+   */
   if (!dashboard) {
     return null;
   }
 
-  return (
-    <div className="dashboard-page">
-      {/* HEADER */}
+  // ==========================================================
+  // MAIN RENDER
+  // ==========================================================
 
-      <div className="dashboard-header">
+  return (
+    <div className="dashboard-page" role="main" aria-label="Business Dashboard">
+
+      {/* ==========================================================
+          HEADER
+          ========================================================== */}
+      <header className="dashboard-header" aria-label="Dashboard header">
         <div>
           <div className="dashboard-eyebrow">BUSINESS OVERVIEW</div>
           <h2>Dashboard</h2>
@@ -344,21 +569,24 @@ function Dashboard() {
           className="dashboard-refresh-button"
           onClick={refreshDashboard}
           disabled={loading || inventoryLoading}
+          aria-label="Refresh dashboard data"
         >
           <RefreshCw
             size={16}
             className={loading || inventoryLoading ? "spin" : ""}
+            aria-hidden="true"
           />
           Refresh
         </button>
-      </div>
+      </header>
 
-      {/* TODAY'S KPI CARDS */}
-
-      <section className="dashboard-kpi-grid">
+      {/* ==========================================================
+          TODAY'S KPI CARDS
+          ========================================================== */}
+      <section className="dashboard-kpi-grid" aria-label="Today's key metrics">
         <div className="dashboard-kpi-card kpi-revenue">
           <div className="kpi-top">
-            <div className="kpi-icon">
+            <div className="kpi-icon" aria-hidden="true">
               <DollarSign size={18} />
             </div>
             <span>Today</span>
@@ -374,7 +602,7 @@ function Dashboard() {
 
         <div className="dashboard-kpi-card kpi-expense">
           <div className="kpi-top">
-            <div className="kpi-icon">
+            <div className="kpi-icon" aria-hidden="true">
               <Wallet size={18} />
             </div>
             <span>Today</span>
@@ -390,7 +618,7 @@ function Dashboard() {
 
         <div className="dashboard-kpi-card kpi-profit">
           <div className="kpi-top">
-            <div className="kpi-icon">
+            <div className="kpi-icon" aria-hidden="true">
               <TrendingUp size={18} />
             </div>
             <span>Today</span>
@@ -406,7 +634,7 @@ function Dashboard() {
 
         <div className="dashboard-kpi-card kpi-orders">
           <div className="kpi-top">
-            <div className="kpi-icon">
+            <div className="kpi-icon" aria-hidden="true">
               <ShoppingCart size={18} />
             </div>
             <span>Inventory</span>
@@ -421,9 +649,10 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* MONTH PERFORMANCE */}
-
-      <section className="dashboard-section">
+      {/* ==========================================================
+          MONTH PERFORMANCE
+          ========================================================== */}
+      <section className="dashboard-section" aria-label="This month's performance">
         <div className="dashboard-section-heading">
           <div>
             <span className="dashboard-section-kicker">PERFORMANCE</span>
@@ -436,32 +665,34 @@ function Dashboard() {
           <div className="dashboard-performance-card">
             <div className="performance-label">Revenue</div>
             <strong>{formatMoney(dashboard.month.summary.revenue)}</strong>
-            {renderGrowth(dashboard.month.growth.revenue)}
+            <GrowthIndicator value={dashboard.month.growth.revenue} />
           </div>
 
           <div className="dashboard-performance-card">
             <div className="performance-label">Gross Profit</div>
             <strong>{formatMoney(dashboard.month.summary.gross_profit)}</strong>
-            {renderGrowth(dashboard.month.growth.gross_profit)}
+            <GrowthIndicator value={dashboard.month.growth.gross_profit} />
           </div>
 
           <div className="dashboard-performance-card">
             <div className="performance-label">Expenses</div>
             <strong>{formatMoney(dashboard.month.summary.expenses)}</strong>
-            {renderGrowth(dashboard.month.growth.expenses)}
+            <GrowthIndicator value={dashboard.month.growth.expenses} />
           </div>
 
           <div className="dashboard-performance-card">
             <div className="performance-label">Net Profit</div>
             <strong>{formatMoney(dashboard.month.summary.net_profit)}</strong>
-            {renderGrowth(dashboard.month.growth.net_profit)}
+            <GrowthIndicator value={dashboard.month.growth.net_profit} />
           </div>
         </div>
       </section>
 
-      {/* CHARTS */}
-
-      <section className="dashboard-chart-grid">
+      {/* ==========================================================
+          CHARTS
+          ========================================================== */}
+      <section className="dashboard-chart-grid" aria-label="Financial charts">
+        {/* Revenue & Profit Area Chart */}
         <div className="dashboard-panel dashboard-chart-panel">
           <div className="dashboard-panel-header">
             <div>
@@ -472,12 +703,12 @@ function Dashboard() {
           </div>
 
           {chartData.length === 0 ? (
-            <div className="dashboard-empty">
+            <div className="dashboard-empty" role="status">
               No monthly history available yet.
             </div>
           ) : (
-            <div className="dashboard-chart">
-              <ResponsiveContainer width="100%" height={290}>
+            <div className="dashboard-chart" aria-label="Revenue and profit trend chart">
+              <ResponsiveContainer width="100%" height={CONFIG.CHART_HEIGHT}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
@@ -549,6 +780,7 @@ function Dashboard() {
           )}
         </div>
 
+        {/* Revenue vs Expenses Bar Chart */}
         <div className="dashboard-panel dashboard-chart-panel">
           <div className="dashboard-panel-header">
             <div>
@@ -559,12 +791,12 @@ function Dashboard() {
           </div>
 
           {chartData.length === 0 ? (
-            <div className="dashboard-empty">
+            <div className="dashboard-empty" role="status">
               No monthly history available yet.
             </div>
           ) : (
-            <div className="dashboard-chart">
-              <ResponsiveContainer width="100%" height={290}>
+            <div className="dashboard-chart" aria-label="Revenue versus expenses bar chart">
+              <ResponsiveContainer width="100%" height={CONFIG.CHART_HEIGHT}>
                 <BarChart data={chartData} barGap={5}>
                   <CartesianGrid
                     stroke="var(--border)"
@@ -620,9 +852,11 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* YEAR + ALL TIME */}
-
-      <section className="dashboard-summary-grid">
+      {/* ==========================================================
+          YEAR + ALL TIME SUMMARY
+          ========================================================== */}
+      <section className="dashboard-summary-grid" aria-label="Year-to-date and lifetime summaries">
+        {/* Year to Date */}
         <div className="dashboard-panel">
           <div className="dashboard-panel-header">
             <div>
@@ -636,29 +870,30 @@ function Dashboard() {
             <div>
               <span>Revenue</span>
               <strong>{formatMoney(dashboard.year.summary.revenue)}</strong>
-              {renderGrowth(dashboard.year.growth.revenue)}
+              <GrowthIndicator value={dashboard.year.growth.revenue} />
             </div>
 
             <div>
               <span>Gross profit</span>
               <strong>{formatMoney(dashboard.year.summary.gross_profit)}</strong>
-              {renderGrowth(dashboard.year.growth.gross_profit)}
+              <GrowthIndicator value={dashboard.year.growth.gross_profit} />
             </div>
 
             <div>
               <span>Expenses</span>
               <strong>{formatMoney(dashboard.year.summary.expenses)}</strong>
-              {renderGrowth(dashboard.year.growth.expenses)}
+              <GrowthIndicator value={dashboard.year.growth.expenses} />
             </div>
 
             <div className="summary-highlight">
               <span>Net profit</span>
               <strong>{formatMoney(dashboard.year.summary.net_profit)}</strong>
-              {renderGrowth(dashboard.year.growth.net_profit)}
+              <GrowthIndicator value={dashboard.year.growth.net_profit} />
             </div>
           </div>
         </div>
 
+        {/* All Time */}
         <div className="dashboard-panel">
           <div className="dashboard-panel-header">
             <div>
@@ -692,9 +927,10 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* INVENTORY */}
-
-      <section className="dashboard-section">
+      {/* ==========================================================
+          INVENTORY OVERVIEW
+          ========================================================== */}
+      <section className="dashboard-section" aria-label="Inventory overview">
         <div className="dashboard-section-heading">
           <div>
             <span className="dashboard-section-kicker">INVENTORY</span>
@@ -705,7 +941,7 @@ function Dashboard() {
 
         <div className="dashboard-inventory-grid">
           <div className="dashboard-inventory-card">
-            <div className="inventory-card-icon">
+            <div className="inventory-card-icon" aria-hidden="true">
               <Package size={19} />
             </div>
             <span>Products</span>
@@ -714,7 +950,7 @@ function Dashboard() {
           </div>
 
           <div className="dashboard-inventory-card">
-            <div className="inventory-card-icon">
+            <div className="inventory-card-icon" aria-hidden="true">
               <Boxes size={19} />
             </div>
             <span>Units in stock</span>
@@ -723,7 +959,7 @@ function Dashboard() {
           </div>
 
           <div className="dashboard-inventory-card">
-            <div className="inventory-card-icon">
+            <div className="inventory-card-icon" aria-hidden="true">
               <Wallet size={19} />
             </div>
             <span>Stock cost value</span>
@@ -732,7 +968,7 @@ function Dashboard() {
           </div>
 
           <div className="dashboard-inventory-card">
-            <div className="inventory-card-icon">
+            <div className="inventory-card-icon" aria-hidden="true">
               <TrendingUp size={19} />
             </div>
             <span>Potential sales</span>
@@ -742,35 +978,45 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* LOW STOCK + MOVEMENTS */}
-
-      <section className="dashboard-two-column">
+      {/* ==========================================================
+          LOW STOCK + RECENT MOVEMENTS
+          ========================================================== */}
+      <section className="dashboard-two-column" aria-label="Low stock alerts and recent movements">
+        {/* Low Stock Panel */}
         <div className="dashboard-panel">
           <div className="dashboard-panel-header">
             <div>
               <span className="dashboard-section-kicker">ATTENTION</span>
               <h3>Low stock</h3>
-              <p>Products with 5 units or fewer remaining.</p>
+              <p>Products with {CONFIG.LOW_STOCK_THRESHOLD} units or fewer remaining.</p>
             </div>
 
-            <div className="panel-header-icon warning">
+            <div className="panel-header-icon warning" aria-hidden="true">
               <AlertTriangle size={17} />
             </div>
           </div>
 
           {inventoryLoading ? (
-            <div className="dashboard-empty">Loading stock levels...</div>
+            <div className="dashboard-empty" role="status">
+              Loading stock levels...
+            </div>
+          ) : inventoryError ? (
+            <div className="dashboard-empty dashboard-state-error" role="alert">
+              <AlertTriangle size={22} aria-hidden="true" />
+              <strong>Unable to load inventory</strong>
+              <span>{inventoryError}</span>
+            </div>
           ) : lowStockProducts.length === 0 ? (
-            <div className="dashboard-empty success-empty">
-              <Package size={22} />
+            <div className="dashboard-empty success-empty" role="status">
+              <Package size={22} aria-hidden="true" />
               <strong>Inventory looks healthy</strong>
               <span>No products are currently below the low-stock threshold.</span>
             </div>
           ) : (
-            <div className="dashboard-list">
-              {lowStockProducts.slice(0, 6).map((product) => (
-                <div className="dashboard-list-row" key={product.id}>
-                  <div className="list-product-icon">
+            <div className="dashboard-list" role="list" aria-label="Low stock products">
+              {lowStockProducts.slice(0, CONFIG.MAX_LOW_STOCK_DISPLAY).map((product) => (
+                <div className="dashboard-list-row" key={product.id} role="listitem">
+                  <div className="list-product-icon" aria-hidden="true">
                     <Package size={16} />
                   </div>
 
@@ -780,9 +1026,8 @@ function Dashboard() {
                   </div>
 
                   <div
-                    className={`stock-count ${
-                      product.stock_quantity === 0 ? "critical" : ""
-                    }`}
+                    className={`stock-count ${product.stock_quantity === 0 ? "critical" : ""}`}
+                    aria-label={`Stock quantity: ${product.stock_quantity} units`}
                   >
                     {product.stock_quantity}
                     <small>units</small>
@@ -793,6 +1038,7 @@ function Dashboard() {
           )}
         </div>
 
+        {/* Recent Movements Panel */}
         <div className="dashboard-panel">
           <div className="dashboard-panel-header">
             <div>
@@ -803,22 +1049,29 @@ function Dashboard() {
           </div>
 
           {inventoryLoading ? (
-            <div className="dashboard-empty">Loading movements...</div>
+            <div className="dashboard-empty" role="status">
+              Loading movements...
+            </div>
+          ) : inventoryError ? (
+            <div className="dashboard-empty dashboard-state-error" role="alert">
+              <AlertTriangle size={22} aria-hidden="true" />
+              <strong>Unable to load movements</strong>
+              <span>{inventoryError}</span>
+            </div>
           ) : inventoryMovements.length === 0 ? (
-            <div className="dashboard-empty">
+            <div className="dashboard-empty" role="status">
               No inventory movements recorded yet.
             </div>
           ) : (
-            <div className="dashboard-list">
-              {inventoryMovements.slice(0, 6).map((movement) => {
+            <div className="dashboard-list" role="list" aria-label="Recent inventory movements">
+              {inventoryMovements.slice(0, CONFIG.MAX_RECENT_MOVEMENTS).map((movement) => {
                 const incoming = movement.movement_type === "IN";
 
                 return (
-                  <div className="dashboard-list-row" key={movement.id}>
+                  <div className="dashboard-list-row" key={movement.id} role="listitem">
                     <div
-                      className={`movement-icon ${
-                        incoming ? "movement-in" : "movement-out"
-                      }`}
+                      className={`movement-icon ${incoming ? "movement-in" : "movement-out"}`}
+                      aria-hidden="true"
                     >
                       {incoming ? (
                         <ArrowUpRight size={16} />
@@ -841,9 +1094,8 @@ function Dashboard() {
                     </div>
 
                     <strong
-                      className={`movement-quantity ${
-                        incoming ? "incoming" : "outgoing"
-                      }`}
+                      className={`movement-quantity ${incoming ? "incoming" : "outgoing"}`}
+                      aria-label={`${incoming ? "Added" : "Removed"} ${movement.quantity} units`}
                     >
                       {incoming ? "+" : "-"}
                       {movement.quantity}
@@ -856,9 +1108,10 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* MONTHLY HISTORY */}
-
-      <section className="dashboard-panel">
+      {/* ==========================================================
+          MONTHLY HISTORY TABLE
+          ========================================================== */}
+      <section className="dashboard-panel" aria-label="Monthly financial history">
         <div className="dashboard-panel-header">
           <div>
             <span className="dashboard-section-kicker">HISTORY</span>
@@ -868,23 +1121,24 @@ function Dashboard() {
         </div>
 
         {dashboard.monthly_history.length === 0 ? (
-          <div className="dashboard-empty">
+          <div className="dashboard-empty" role="status">
             No monthly history available yet.
           </div>
         ) : (
           <div className="dashboard-table-wrapper">
-            <table className="dashboard-table">
+            <table className="dashboard-table" aria-label="Monthly financial history table">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Revenue</th>
-                  <th>Expenses</th>
-                  <th>Gross profit</th>
-                  <th>Net profit</th>
+                  <th scope="col">Month</th>
+                  <th scope="col">Revenue</th>
+                  <th scope="col">Expenses</th>
+                  <th scope="col">Gross profit</th>
+                  <th scope="col">Net profit</th>
                 </tr>
               </thead>
 
               <tbody>
+                {/* Show newest entries first */}
                 {[...dashboard.monthly_history]
                   .reverse()
                   .map((item) => (

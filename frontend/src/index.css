@@ -1,83 +1,130 @@
-:root {
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+/* ============================================================
+   ROOT STYLES & CSS VARIABLES
+   
+   This file contains:
+   - CSS custom properties for theming (light/dark mode)
+   - Global reset and base styles
+   - Color scheme configuration
+   ============================================================ */
 
-  color: #172033;
-  background: #f5f7fb;
+:root {
+  /* ==========================================================
+     TYPOGRAPHY
+     ========================================================== */
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
+  /* ==========================================================
+     LIGHT THEME COLORS
+     ========================================================== */
+
+  /* Backgrounds */
   --bg: #f5f7fb;
   --surface: #ffffff;
   --surface-raised: #ffffff;
   --surface-muted: #f8fafc;
+
+  /* Borders */
   --border: #e6eaf0;
   --border-strong: #d7dce5;
 
+  /* Text */
   --text: #172033;
   --text-secondary: #5d6677;
   --text-muted: #8992a3;
 
+  /* Primary */
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
   --primary-soft: #eff6ff;
 
+  /* Status */
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
 
+  /* Sidebar */
   --sidebar-bg: #111827;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-text: #aab3c2;
   --sidebar-text-active: #ffffff;
   --sidebar-active: rgba(255, 255, 255, 0.1);
 
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
 
+  /* Color scheme */
   color-scheme: light;
+  color: #172033;
+  background: #f5f7fb;
 }
 
-:root[data-theme="dark"] {
-  color: #e7ebf3;
-  background: #0b1120;
+/* ============================================================
+   DARK THEME
+   ============================================================ */
 
+:root[data-theme="dark"] {
+  /* Backgrounds */
   --bg: #0b1120;
   --surface: #111827;
   --surface-raised: #172033;
   --surface-muted: #0f172a;
+
+  /* Borders */
   --border: #263145;
   --border-strong: #344057;
 
+  /* Text */
   --text: #e7ebf3;
   --text-secondary: #aeb7c8;
   --text-muted: #778298;
 
+  /* Primary */
   --primary: #60a5fa;
   --primary-hover: #93c5fd;
   --primary-soft: rgba(59, 130, 246, 0.12);
 
+  /* Status */
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
 
+  /* Sidebar */
   --sidebar-bg: #080d18;
   --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-text: #8792a6;
   --sidebar-text-active: #ffffff;
   --sidebar-active: rgba(255, 255, 255, 0.09);
 
+  /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.3);
 
   color-scheme: dark;
+  color: #e7ebf3;
+  background: #0b1120;
 }
+
+/* ============================================================
+   GLOBAL RESET
+   ============================================================ */
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html,
@@ -93,7 +140,12 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  font-family: inherit;
 }
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
 
 button,
 input,
@@ -104,17 +156,53 @@ textarea {
 
 button {
   color: inherit;
+  cursor: pointer;
 }
+
+/* ============================================================
+   LINKS
+   ============================================================ */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ============================================================
+   TAP HIGHLIGHT REMOVAL
+   ============================================================ */
 
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 
-a {
-  color: inherit;
-}
+/* ============================================================
+   SELECTION
+   ============================================================ */
 
 ::selection {
   background: rgba(37, 99, 235, 0.2);
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

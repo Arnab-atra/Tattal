@@ -1,0 +1,621 @@
+/* ============================================================
+   EXPENSES PAGE STYLES
+   
+   This file contains all styles for the Expenses page including:
+   - Page layout and header
+   - Expense creation form
+   - Expense summary cards
+   - Expense history table
+   - Form validation states
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.expenses-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.expenses-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.expenses-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.expenses-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Refresh Button */
+.expenses-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.expenses-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.expenses-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Primary Button (Submit) */
+.expenses-page .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.expenses-page .primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.expenses-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Secondary Button (Clear) */
+.expenses-page .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.expenses-page .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.expenses-page .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.expenses-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Success message */
+.expenses-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.expenses-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.expenses-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.expenses-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.expenses-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   EXPENSE FORM
+   ============================================================ */
+
+.expenses-page .expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+/* Two-column layout for form */
+.expenses-page .expense-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.65fr);
+  align-items: start;
+  gap: 18px;
+}
+
+/* Form grid for multi-column layouts */
+.expenses-page .expense-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Form groups */
+.expenses-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.expenses-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.expenses-page .form-group label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.expenses-page .form-group input,
+.expenses-page .form-group textarea,
+.expenses-page .form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.expenses-page .form-group input,
+.expenses-page .form-group select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.expenses-page .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  padding: 11px;
+}
+
+.expenses-page .form-group input:focus,
+.expenses-page .form-group textarea:focus,
+.expenses-page .form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.expenses-page .form-group input:disabled,
+.expenses-page .form-group textarea:disabled,
+.expenses-page .form-group select:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.expenses-page .form-group input::placeholder,
+.expenses-page .form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.expenses-page .form-group small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* Form actions */
+.expenses-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.expenses-page .form-actions button {
+  min-height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.expenses-page .form-actions button[type="submit"] {
+  background: var(--primary);
+  color: white;
+}
+
+.expenses-page .form-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.expenses-page .form-actions button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.expenses-page .form-actions .secondary-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.expenses-page .form-actions .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.expenses-page .form-actions .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   EXPENSE SUMMARY
+   ============================================================ */
+
+.expenses-page .expense-summary {
+  position: sticky;
+  top: 20px;
+}
+
+.expenses-page .expense-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 18px 20px 10px;
+}
+
+.expenses-page .expense-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.expenses-page .expense-summary-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.expenses-page .expense-summary-row span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.expenses-page .expense-summary-row strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.expenses-page .expense-summary-row .expense-total {
+  color: var(--danger);
+  font-size: 20px;
+  font-weight: 760;
+}
+
+/* ============================================================
+   EXPENSE HISTORY TABLE
+   ============================================================ */
+
+.expenses-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.expenses-page table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.expenses-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.expenses-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.expenses-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.expenses-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.expenses-page td strong {
+  color: var(--text);
+}
+
+/* Category badge */
+.expenses-page .category-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.expenses-page .category-badge.rent {
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary);
+}
+
+.expenses-page .category-badge.utilities {
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  color: var(--warning);
+}
+
+.expenses-page .category-badge.salary {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.expenses-page .category-badge.transport {
+  background: color-mix(in srgb, var(--purple) 10%, var(--surface));
+  color: var(--purple);
+}
+
+.expenses-page .category-badge.supplies {
+  background: color-mix(in srgb, var(--info) 10%, var(--surface));
+  color: var(--info);
+}
+
+.expenses-page .category-badge.maintenance {
+  background: color-mix(in srgb, var(--orange) 10%, var(--surface));
+  color: var(--orange);
+}
+
+.expenses-page .category-badge.marketing {
+  background: color-mix(in srgb, var(--pink) 10%, var(--surface));
+  color: var(--pink);
+}
+
+.expenses-page .category-badge.other {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+/* Amount styling */
+.expenses-page .expense-amount {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* Payment method badge */
+.expenses-page .payment-badge {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.expenses-page .empty-state {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.expenses-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.expenses-page .loading {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 992px) {
+  .expenses-page .expense-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .expenses-page .expense-summary {
+    position: static;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .expenses-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .expenses-page .refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .expenses-page .expense-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .expenses-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .expenses-page .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .expenses-page .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .expenses-page {
+    gap: 18px;
+  }
+
+  .expenses-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .expenses-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .expenses-page .expense-form {
+    padding: 16px;
+  }
+
+  .expenses-page .expense-summary-content {
+    padding: 14px 16px 8px;
+  }
+
+  .expenses-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+}

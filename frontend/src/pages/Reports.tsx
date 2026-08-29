@@ -1,5 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
+// ============================================================
+// Reports.tsx
+// 
+// A comprehensive reporting component that provides:
+// - Period selection (This Month, Previous Month, This Year, All Time)
+// - Financial summary for selected period
+// - Profit analysis with breakdown
+// - Growth analysis with percentage changes
+// - Monthly historical performance table
+// - Business overview with all-time totals
+// - Responsive and accessible UI
+// ============================================================
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "./Reports.css";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+/**
+ * Financial summary for a specific period
+ */
 type Summary = {
   revenue: number;
   cogs: number;
@@ -8,6 +29,10 @@ type Summary = {
   net_profit: number;
 };
 
+/**
+ * Growth percentages compared to previous period
+ * null indicates no comparison available
+ */
 type Growth = {
   revenue: number | null;
   cogs: number | null;
@@ -16,6 +41,9 @@ type Growth = {
   net_profit: number | null;
 };
 
+/**
+ * Monthly financial history record
+ */
 type MonthlyHistory = {
   year: number;
   month: number;
@@ -26,44 +54,119 @@ type MonthlyHistory = {
   net_profit: number;
 };
 
+/**
+ * Complete dashboard data from API
+ */
 type DashboardData = {
   date: string;
-
   today: Summary;
-
   month: {
     summary: Summary;
     growth: Growth;
   };
-
   year: {
     summary: Summary;
     growth: Growth;
   };
-
   all_time: Summary;
-
   monthly_history: MonthlyHistory[];
 };
 
+/**
+ * Report period options
+ */
 type ReportPeriod = "month" | "previous-month" | "year" | "all-time";
 
-const API_URL = "http://127.0.0.1:3000";
+/**
+ * Selected report data
+ */
+type SelectedReport = {
+  title: string;
+  description: string;
+  summary: Summary;
+  growth: Growth;
+};
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+// Use environment variable for API URL with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+// Report period options for the dropdown
+const REPORT_PERIODS: { value: ReportPeriod; label: string }[] = [
+  { value: "month", label: "This Month" },
+  { value: "previous-month", label: "Previous Month" },
+  { value: "year", label: "This Year" },
+  { value: "all-time", label: "All Time" },
+];
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+/**
+ * Formats a monetary value in Indian Rupees (₹)
+ * @param amount - Value in paise (1/100 of a rupee)
+ * @returns Formatted currency string
+ */
+const formatMoney = (amount: number): string => {
+  return `₹${(amount / 100).toFixed(2)}`;
+};
+
+/**
+ * Formats a month/year combination to a readable format
+ * @param year - Four-digit year
+ * @param month - Month number (1-12)
+ * @returns Formatted month string (e.g., "August 2026")
+ */
+const formatMonth = (year: number, month: number): string => {
+  return new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+/**
+ * Renders a growth indicator with arrow and percentage
+ */
+const GrowthIndicator = ({ value }: { value: number | null }) => {
+  if (value === null) {
+    return <span className="growth neutral">N/A</span>;
+  }
+
+  const positive = value >= 0;
+
+  return (
+    <span className={`growth ${positive ? "positive" : "negative"}`}>
+      {positive ? "↑" : "↓"} {Math.abs(value).toFixed(1)}%
+    </span>
+  );
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function Reports() {
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-
   const [period, setPeriod] = useState<ReportPeriod>("month");
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
-  // --------------------------------------------------
-  // LOAD REPORT DATA
-  // --------------------------------------------------
+  // ==========================================================
+  // DATA FETCHING
+  // ==========================================================
 
-  const loadReports = async () => {
+  /**
+   * Fetches report data from the API
+   */
+  const loadReports = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -71,110 +174,146 @@ function Reports() {
       const response = await fetch(`${API_URL}/api/dashboard`);
 
       if (!response.ok) {
-        throw new Error("Failed to load reports.");
+        let errorMessage = `HTTP ${response.status}: Failed to load reports`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
       }
 
       const data: DashboardData = await response.json();
-
       setDashboard(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load reports.");
+      const message = err instanceof Error ? err.message : "Failed to load reports";
+      setError(message);
+      console.error("Reports fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadReports();
   }, []);
 
-  // --------------------------------------------------
-  // FORMATTING
-  // --------------------------------------------------
+  // ==========================================================
+  // EFFECTS
+  // ==========================================================
 
-  const formatMoney = (amount: number) => {
-    return `₹${(amount / 100).toFixed(2)}`;
-  };
+  /**
+   * Initial data loading on component mount
+   * Uses cancellation token to prevent memory leaks
+   */
+  useEffect(() => {
+    let cancelled = false;
 
-  const formatMonth = (year: number, month: number) => {
-    return new Date(year, month - 1, 1).toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric",
-    });
-  };
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  // --------------------------------------------------
-  // PREVIOUS MONTH
-  // --------------------------------------------------
+        const response = await fetch(`${API_URL}/api/dashboard`);
 
-  const getPreviousMonth = () => {
-    if (!dashboard) {
-      return null;
-    }
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: Failed to load reports`;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
+          } catch {
+            // Ignore parsing errors
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data: DashboardData = await response.json();
+
+        if (!cancelled) {
+          setDashboard(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Failed to load reports";
+          setError(message);
+          console.error("Reports fetch error:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchReports();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Empty dependency array = run once on mount
+
+  // ==========================================================
+  // COMPUTED VALUES
+  // ==========================================================
+
+  /**
+   * Calculates the previous month based on the current date
+   */
+  const getPreviousMonth = useCallback((): { year: number; month: number } | null => {
+    if (!dashboard) return null;
 
     const currentDate = new Date(`${dashboard.date}T00:00:00`);
-
     currentDate.setMonth(currentDate.getMonth() - 1);
 
     return {
       year: currentDate.getFullYear(),
       month: currentDate.getMonth() + 1,
     };
-  };
+  }, [dashboard]);
 
-  // --------------------------------------------------
-  // SELECTED REPORT
-  // --------------------------------------------------
+  /**
+   * Gets the selected report data based on the current period
+   */
+  const selectedReport = useMemo<SelectedReport | null>(() => {
+    if (!dashboard) return null;
 
-  const selectedReport = useMemo(() => {
-    if (!dashboard) {
-      return null;
-    }
-
-    // ----------------------------------------------
-    // CURRENT MONTH
-    // ----------------------------------------------
-
+    // This Month
     if (period === "month") {
       return {
         title: "This Month",
-
         description: "Current month's business performance.",
-
         summary: dashboard.month.summary,
-
         growth: dashboard.month.growth,
       };
     }
 
-    // ----------------------------------------------
-    // CURRENT YEAR
-    // ----------------------------------------------
-
+    // This Year
     if (period === "year") {
       return {
         title: "This Year",
-
         description: "Current year's business performance.",
-
         summary: dashboard.year.summary,
-
         growth: dashboard.year.growth,
       };
     }
 
-    // ----------------------------------------------
-    // ALL TIME
-    // ----------------------------------------------
-
+    // All Time
     if (period === "all-time") {
       return {
         title: "All Time",
-
         description: "Complete business performance.",
-
         summary: dashboard.all_time,
-
         growth: {
           revenue: null,
           cogs: null,
@@ -185,19 +324,13 @@ function Reports() {
       };
     }
 
-    // ----------------------------------------------
-    // PREVIOUS MONTH
-    // ----------------------------------------------
-
+    // Previous Month
     const previousMonth = getPreviousMonth();
-
-    if (!previousMonth) {
-      return null;
-    }
+    if (!previousMonth) return null;
 
     const history = dashboard.monthly_history.find(
       (item) =>
-        item.year === previousMonth.year && item.month === previousMonth.month,
+        item.year === previousMonth.year && item.month === previousMonth.month
     );
 
     const summary: Summary = history
@@ -218,11 +351,8 @@ function Reports() {
 
     return {
       title: formatMonth(previousMonth.year, previousMonth.month),
-
       description: "Previous month's business performance.",
-
       summary,
-
       growth: {
         revenue: null,
         cogs: null,
@@ -231,191 +361,185 @@ function Reports() {
         net_profit: null,
       },
     };
-  }, [dashboard, period]);
+  }, [dashboard, period, getPreviousMonth]);
 
-  // --------------------------------------------------
-  // GROWTH DISPLAY
-  // --------------------------------------------------
+  /**
+   * Reverses monthly history for display (newest first)
+   */
+  const history = useMemo(() => {
+    if (!dashboard) return [];
+    return [...dashboard.monthly_history].reverse();
+  }, [dashboard]);
 
-  const renderGrowth = (value: number | null) => {
-    if (value === null) {
-      return <span className="growth neutral">N/A</span>;
-    }
+  // ==========================================================
+  // RENDER HELPERS
+  // ==========================================================
 
-    const positive = value >= 0;
-
-    return (
-      <span className={`growth ${positive ? "positive" : "negative"}`}>
-        {positive ? "↑" : "↓"} {Math.abs(value).toFixed(1)}%
-      </span>
-    );
-  };
-
-  // --------------------------------------------------
-  // LOADING
-  // --------------------------------------------------
-
+  /**
+   * Loading state renderer
+   */
   if (loading) {
-    return <div className="loading">Loading reports...</div>;
+    return (
+      <div className="reports-page">
+        <div className="loading" role="status" aria-label="Loading reports">
+          Loading reports...
+        </div>
+      </div>
+    );
   }
 
-  // --------------------------------------------------
-  // ERROR
-  // --------------------------------------------------
-
+  /**
+   * Error state renderer
+   */
   if (error) {
     return (
-      <>
-        <div className="error">{error}</div>
+      <div className="reports-page">
+        <div className="page-header">
+          <div>
+            <h2>Reports</h2>
+            <p>Analyze your business performance and financial history.</p>
+          </div>
+          <button
+            className="refresh-button"
+            onClick={() => void loadReports()}
+            disabled={loading}
+          >
+            Refresh
+          </button>
+        </div>
 
-        <button onClick={loadReports}>Try Again</button>
-      </>
+        <div className="error" role="alert">
+          <strong>Error loading reports:</strong> {error}
+        </div>
+
+        <button
+          className="refresh-button"
+          onClick={() => void loadReports()}
+          style={{ alignSelf: 'flex-start' }}
+        >
+          Try Again
+        </button>
+      </div>
     );
   }
 
-  // --------------------------------------------------
-  // NO DATA
-  // --------------------------------------------------
-
+  /**
+   * Guard: If no data after loading, return null
+   */
   if (!dashboard || !selectedReport) {
     return null;
   }
 
-  const history = [...dashboard.monthly_history].reverse();
-
-  // --------------------------------------------------
-  // PAGE
-  // --------------------------------------------------
+  // ==========================================================
+  // MAIN RENDER
+  // ==========================================================
 
   return (
-    <>
-      {/* ==========================================
-          HEADER
-      ========================================== */}
+    <div className="reports-page" role="main" aria-label="Reports Dashboard">
 
-      <div className="page-header">
+      {/* ==========================================================
+          HEADER
+          ========================================================== */}
+      <header className="page-header" aria-label="Reports header">
         <div>
           <h2>Reports</h2>
-
           <p>Analyze your business performance and financial history.</p>
         </div>
 
         <button
           className="refresh-button"
-          onClick={loadReports}
+          onClick={() => void loadReports()}
           disabled={loading}
+          aria-label="Refresh reports data"
         >
           Refresh
         </button>
-      </div>
+      </header>
 
-      {/* ==========================================
-          REPORT PERIOD
-      ========================================== */}
-
-      <section className="card">
+      {/* ==========================================================
+          REPORT PERIOD SELECTOR
+          ========================================================== */}
+      <section className="card" aria-label="Report period selector">
         <div className="card-header">
           <div>
             <h3>Report Period</h3>
-
             <p>Select the period you want to analyze.</p>
           </div>
         </div>
 
         <div className="form-group">
           <label htmlFor="report-period">Period</label>
-
           <select
             id="report-period"
             value={period}
             onChange={(event) => setPeriod(event.target.value as ReportPeriod)}
+            aria-label="Select report period"
           >
-            <option value="month">This Month</option>
-
-            <option value="previous-month">Previous Month</option>
-
-            <option value="year">This Year</option>
-
-            <option value="all-time">All Time</option>
+            {REPORT_PERIODS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </section>
 
-      {/* ==========================================
+      {/* ==========================================================
           SELECTED PERIOD SUMMARY
-      ========================================== */}
-
-      <section className="card">
+          ========================================================== */}
+      <section className="card" aria-label="Selected period summary">
         <div className="card-header">
           <div>
             <h3>{selectedReport.title}</h3>
-
             <p>{selectedReport.description}</p>
           </div>
         </div>
 
         <div className="summary-grid">
-          {/* REVENUE */}
-
+          {/* Revenue */}
           <div className="summary-card revenue-card">
             <span className="summary-label">Revenue</span>
-
             <strong>{formatMoney(selectedReport.summary.revenue)}</strong>
-
-            {renderGrowth(selectedReport.growth.revenue)}
+            <GrowthIndicator value={selectedReport.growth.revenue} />
           </div>
 
           {/* COGS */}
-
           <div className="summary-card expense-card">
             <span className="summary-label">COGS</span>
-
             <strong>{formatMoney(selectedReport.summary.cogs)}</strong>
-
-            {renderGrowth(selectedReport.growth.cogs)}
+            <GrowthIndicator value={selectedReport.growth.cogs} />
           </div>
 
-          {/* GROSS PROFIT */}
-
+          {/* Gross Profit */}
           <div className="summary-card profit-card">
             <span className="summary-label">Gross Profit</span>
-
             <strong>{formatMoney(selectedReport.summary.gross_profit)}</strong>
-
-            {renderGrowth(selectedReport.growth.gross_profit)}
+            <GrowthIndicator value={selectedReport.growth.gross_profit} />
           </div>
 
-          {/* EXPENSES */}
-
+          {/* Expenses */}
           <div className="summary-card expense-card">
             <span className="summary-label">Operating Expenses</span>
-
             <strong>{formatMoney(selectedReport.summary.expenses)}</strong>
-
-            {renderGrowth(selectedReport.growth.expenses)}
+            <GrowthIndicator value={selectedReport.growth.expenses} />
           </div>
 
-          {/* NET PROFIT */}
-
+          {/* Net Profit */}
           <div className="summary-card profit-card">
             <span className="summary-label">Net Profit</span>
-
             <strong>{formatMoney(selectedReport.summary.net_profit)}</strong>
-
-            {renderGrowth(selectedReport.growth.net_profit)}
+            <GrowthIndicator value={selectedReport.growth.net_profit} />
           </div>
         </div>
       </section>
 
-      {/* ==========================================
+      {/* ==========================================================
           PROFIT ANALYSIS
-      ========================================== */}
-
-      <section className="card">
+          ========================================================== */}
+      <section className="card" aria-label="Profit analysis">
         <div className="card-header">
           <div>
             <h3>Profit Analysis</h3>
-
             <p>Revenue, cost of goods sold and profitability breakdown.</p>
           </div>
         </div>
@@ -423,45 +547,38 @@ function Reports() {
         <div className="metric-grid">
           <div className="metric">
             <span>Revenue</span>
-
             <strong>{formatMoney(selectedReport.summary.revenue)}</strong>
           </div>
 
           <div className="metric">
             <span>Cost of Goods Sold</span>
-
             <strong>{formatMoney(selectedReport.summary.cogs)}</strong>
           </div>
 
           <div className="metric">
             <span>Gross Profit</span>
-
             <strong>{formatMoney(selectedReport.summary.gross_profit)}</strong>
           </div>
 
           <div className="metric">
             <span>Operating Expenses</span>
-
             <strong>{formatMoney(selectedReport.summary.expenses)}</strong>
           </div>
 
           <div className="metric">
             <span>Net Profit</span>
-
             <strong>{formatMoney(selectedReport.summary.net_profit)}</strong>
           </div>
         </div>
       </section>
 
-      {/* ==========================================
+      {/* ==========================================================
           GROWTH ANALYSIS
-      ========================================== */}
-
-      <section className="card">
+          ========================================================== */}
+      <section className="card" aria-label="Growth analysis">
         <div className="card-header">
           <div>
             <h3>Growth Analysis</h3>
-
             <p>Performance compared with the previous period.</p>
           </div>
         </div>
@@ -469,94 +586,83 @@ function Reports() {
         <div className="metric-grid">
           <div className="metric">
             <span>Revenue Growth</span>
-
             <strong>
               {selectedReport.growth.revenue === null
                 ? "N/A"
                 : `${selectedReport.growth.revenue.toFixed(1)}%`}
             </strong>
-
-            {renderGrowth(selectedReport.growth.revenue)}
+            <GrowthIndicator value={selectedReport.growth.revenue} />
           </div>
 
           <div className="metric">
             <span>COGS Growth</span>
-
             <strong>
               {selectedReport.growth.cogs === null
                 ? "N/A"
                 : `${selectedReport.growth.cogs.toFixed(1)}%`}
             </strong>
-
-            {renderGrowth(selectedReport.growth.cogs)}
+            <GrowthIndicator value={selectedReport.growth.cogs} />
           </div>
 
           <div className="metric">
             <span>Gross Profit Growth</span>
-
             <strong>
               {selectedReport.growth.gross_profit === null
                 ? "N/A"
                 : `${selectedReport.growth.gross_profit.toFixed(1)}%`}
             </strong>
-
-            {renderGrowth(selectedReport.growth.gross_profit)}
+            <GrowthIndicator value={selectedReport.growth.gross_profit} />
           </div>
 
           <div className="metric">
             <span>Expense Growth</span>
-
             <strong>
               {selectedReport.growth.expenses === null
                 ? "N/A"
                 : `${selectedReport.growth.expenses.toFixed(1)}%`}
             </strong>
-
-            {renderGrowth(selectedReport.growth.expenses)}
+            <GrowthIndicator value={selectedReport.growth.expenses} />
           </div>
 
           <div className="metric">
             <span>Net Profit Growth</span>
-
             <strong>
               {selectedReport.growth.net_profit === null
                 ? "N/A"
                 : `${selectedReport.growth.net_profit.toFixed(1)}%`}
             </strong>
-
-            {renderGrowth(selectedReport.growth.net_profit)}
+            <GrowthIndicator value={selectedReport.growth.net_profit} />
           </div>
         </div>
       </section>
 
-      {/* ==========================================
+      {/* ==========================================================
           MONTHLY HISTORY
-      ========================================== */}
-
-      <section className="card">
+          ========================================================== */}
+      <section className="card" aria-label="Monthly performance history">
         <div className="card-header">
           <div>
             <h3>Monthly Performance</h3>
-
             <p>Historical financial performance by month.</p>
           </div>
         </div>
 
         {history.length === 0 ? (
-          <div className="empty-state">
-            No monthly financial history available yet.
+          <div className="empty-state" role="status">
+            <strong>No data available</strong>
+            <span>No monthly financial history available yet.</span>
           </div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table aria-label="Monthly performance table">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Revenue</th>
-                  <th>COGS</th>
-                  <th>Gross Profit</th>
-                  <th>Expenses</th>
-                  <th>Net Profit</th>
+                  <th scope="col">Month</th>
+                  <th scope="col">Revenue</th>
+                  <th scope="col">COGS</th>
+                  <th scope="col">Gross Profit</th>
+                  <th scope="col">Expenses</th>
+                  <th scope="col">Net Profit</th>
                 </tr>
               </thead>
 
@@ -566,15 +672,10 @@ function Reports() {
                     <td>
                       <strong>{formatMonth(item.year, item.month)}</strong>
                     </td>
-
                     <td>{formatMoney(item.revenue)}</td>
-
                     <td>{formatMoney(item.cogs)}</td>
-
                     <td>{formatMoney(item.gross_profit)}</td>
-
                     <td>{formatMoney(item.expenses)}</td>
-
                     <td>
                       <strong>{formatMoney(item.net_profit)}</strong>
                     </td>
@@ -586,15 +687,13 @@ function Reports() {
         )}
       </section>
 
-      {/* ==========================================
-          ALL-TIME BUSINESS OVERVIEW
-      ========================================== */}
-
-      <section className="card">
+      {/* ==========================================================
+          BUSINESS OVERVIEW (All-Time Totals)
+          ========================================================== */}
+      <section className="card" aria-label="Business overview">
         <div className="card-header">
           <div>
             <h3>Business Overview</h3>
-
             <p>All-time financial totals.</p>
           </div>
         </div>
@@ -602,36 +701,31 @@ function Reports() {
         <div className="metric-grid">
           <div className="metric">
             <span>Total Revenue</span>
-
             <strong>{formatMoney(dashboard.all_time.revenue)}</strong>
           </div>
 
           <div className="metric">
             <span>Total COGS</span>
-
             <strong>{formatMoney(dashboard.all_time.cogs)}</strong>
           </div>
 
           <div className="metric">
             <span>Total Gross Profit</span>
-
             <strong>{formatMoney(dashboard.all_time.gross_profit)}</strong>
           </div>
 
           <div className="metric">
             <span>Total Expenses</span>
-
             <strong>{formatMoney(dashboard.all_time.expenses)}</strong>
           </div>
 
           <div className="metric">
             <span>Total Net Profit</span>
-
             <strong>{formatMoney(dashboard.all_time.net_profit)}</strong>
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 

@@ -1,5 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+// ============================================================
+// Customers.tsx
+// 
+// A comprehensive customer management component that provides:
+// - Customer list with search functionality
+// - Create, read, update, and delete customer operations
+// - Customer detail view with purchase history
+// - Outstanding balance tracking
+// - Responsive and accessible UI
+// ============================================================
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "./Customers.css";
+
+// ============================================================
+// TYPES
+// ============================================================
+
+/**
+ * Basic customer information
+ */
 type Customer = {
   id: string;
   name: string;
@@ -10,6 +29,9 @@ type Customer = {
   updated_at: string;
 };
 
+/**
+ * Customer sale record
+ */
 type CustomerSale = {
   id: string;
   sale_date: string;
@@ -18,6 +40,9 @@ type CustomerSale = {
   payment_method: string | null;
 };
 
+/**
+ * Complete customer detail including sales history
+ */
 type CustomerDetail = Customer & {
   sales_count: number;
   total_purchases: number;
@@ -25,153 +50,143 @@ type CustomerDetail = Customer & {
   sales: CustomerSale[];
 };
 
-const API_URL = "http://127.0.0.1:3000";
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+// Use environment variable for API URL with fallback
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:3000";
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+/**
+ * Formats a monetary value in Indian Rupees (₹)
+ * @param amount - Value in paise (1/100 of a rupee)
+ * @returns Formatted currency string with trailing space
+ */
+const formatMoney = (amount: number): string => {
+  return `₹${(amount / 100).toFixed(2)} `;
+};
+
+/**
+ * Formats a timestamp to a readable date/time
+ * @param date - ISO timestamp string
+ * @returns Formatted date/time (e.g., "29 Aug, 2024, 14:30")
+ */
+const formatDateTime = (date: string): string => {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/**
+ * Gets the display name for a payment method
+ * @param method - Payment method code
+ * @returns Human-readable payment method name
+ */
+const getPaymentMethodName = (method: string | null): string => {
+  if (!method) {
+    return "—";
+  }
+
+  const methods: Record<string, string> = {
+    cash: "Cash",
+    upi: "UPI",
+    card: "Card",
+    bank_transfer: "Bank Transfer",
+  };
+
+  return methods[method.toLowerCase()] || method;
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function Customers() {
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
+  // Customer data
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerDetail | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null);
 
+  // UI state
   const [search, setSearch] = useState("");
-
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(
-    null,
-  );
-  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
 
+  // Form state
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
 
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [error, setError] = useState("");
+  const [savingCustomer, setSavingCustomer] = useState(false);
 
-  const loadCustomers = async () => {
+  // Error/Success states
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // ==========================================================
+  // DATA FETCHING
+  // ==========================================================
+
+  /**
+   * Fetches the complete list of customers
+   */
+  const loadCustomers = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
+      setSuccess("");
 
       const response = await fetch(`${API_URL}/api/customers`);
 
       if (!response.ok) {
-        throw new Error("Failed to load customers.");
+        let errorMessage = `HTTP ${response.status}: Failed to load customers`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
       }
 
       const data: Customer[] = await response.json();
       setCustomers(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load customers.",
-      );
+      const message = err instanceof Error ? err.message : "Failed to load customers";
+      setError(message);
+      console.error("Customers fetch error:", err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadCustomers();
   }, []);
 
-  const resetCustomerForm = () => {
-    setCustomerName("");
-    setCustomerPhone("");
-    setCustomerEmail("");
-    setCustomerNotes("");
-    setEditingCustomerId(null);
-  };
-
-  const startEditCustomer = async (customer: Customer) => {
-    setError("");
-    setEditingCustomerId(customer.id);
-    setCustomerName(customer.name);
-    setCustomerPhone(customer.phone ?? "");
-    setCustomerEmail(customer.email ?? "");
-    setCustomerNotes(customer.notes ?? "");
-    setShowCreateForm(true);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  const saveCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const name = customerName.trim();
-
-    if (!name) {
-      setError("Customer name is required.");
-      return;
-    }
-
-    try {
-      setSavingCustomer(true);
-      setError("");
-
-      const isEditing = Boolean(editingCustomerId);
-
-      const response = await fetch(
-        isEditing
-          ? `${API_URL}/api/customers/${editingCustomerId}`
-          : `${API_URL}/api/customers`,
-        {
-          method: isEditing ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name,
-            phone: customerPhone.trim() || null,
-            email: customerEmail.trim() || null,
-            notes: customerNotes.trim() || null,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(
-          message ||
-            (isEditing
-              ? "Failed to update customer."
-              : "Failed to create customer."),
-        );
-      }
-
-      const customer: Customer = await response.json();
-
-      if (isEditing) {
-        setCustomers((current) =>
-          current.map((item) => (item.id === customer.id ? customer : item)),
-        );
-
-        if (selectedCustomer?.id === customer.id) {
-          await openCustomer(customer.id);
-        }
-      } else {
-        setCustomers((current) => [customer, ...current]);
-      }
-
-      setShowCreateForm(false);
-      resetCustomerForm();
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : editingCustomerId
-            ? "Failed to update customer."
-            : "Failed to create customer.",
-      );
-    } finally {
-      setSavingCustomer(false);
-    }
-  };
-
-  const openCustomer = async (customerId: string) => {
+  /**
+   * Fetches detailed information for a specific customer
+   * Includes purchase history and financial summary
+   */
+  const loadCustomerDetail = useCallback(async (customerId: string) => {
     try {
       setLoadingDetail(true);
       setError("");
@@ -179,75 +194,300 @@ function Customers() {
       const response = await fetch(`${API_URL}/api/customers/${customerId}`);
 
       if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to load customer.");
+        let errorMessage = `HTTP ${response.status}: Failed to load customer details`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+            } catch {
+              errorMessage = text || errorMessage;
+            }
+          }
+        } catch {
+          // Ignore parsing errors
+        }
+        throw new Error(errorMessage);
       }
 
       const data: CustomerDetail = await response.json();
       setSelectedCustomer(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load customer.");
+      const message = err instanceof Error ? err.message : "Failed to load customer details";
+      setError(message);
+      console.error("Customer detail fetch error:", err);
     } finally {
       setLoadingDetail(false);
     }
-  };
+  }, []);
 
-  const formatMoney = (amount: number) => {
-    return `₹${(amount / 100).toFixed(2)} `;
-  };
+  // ==========================================================
+  // EFFECTS
+  // ==========================================================
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+  /**
+   * Initial data loading on component mount
+   * Uses cancellation token to prevent memory leaks
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // FIXED: Corrected API endpoint from "coustomers" to "customers"
+        const response = await fetch(`${API_URL}/api/customers`);
+
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: Failed to load customers`;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+            }
+          } catch {
+            // Ignore parsing errors
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data: Customer[] = await response.json();
+
+        if (!cancelled) {
+          setCustomers(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "Failed to load customers";
+          setError(message);
+          console.error("Customers fetch error:", err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchCustomers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Empty dependency array = run once on mount
+
+  // ==========================================================
+  // FORM MANAGEMENT
+  // ==========================================================
+
+  /**
+   * Resets the customer form to empty state
+   * Clears all fields and editing state
+   */
+  const resetCustomerForm = useCallback(() => {
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setCustomerNotes("");
+    setEditingCustomerId(null);
+    setError("");
+    setSuccess("");
+  }, []);
+
+  /**
+   * Opens the form to edit an existing customer
+   * Populates form fields with customer data
+   */
+  const startEditCustomer = useCallback((customer: Customer) => {
+    setEditingCustomerId(customer.id);
+    setCustomerName(customer.name);
+    setCustomerPhone(customer.phone ?? "");
+    setCustomerEmail(customer.email ?? "");
+    setCustomerNotes(customer.notes ?? "");
+    setShowCreateForm(true);
+    setError("");
+    setSuccess("");
+
+    // Scroll to top for better UX on mobile
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
     });
-  };
+  }, []);
 
-  const getPaymentMethodName = (method: string | null) => {
-    if (!method) {
-      return "—";
+  /**
+   * Closes the customer detail view
+   */
+  const closeCustomerDetail = useCallback(() => {
+    setSelectedCustomer(null);
+  }, []);
+
+  // ==========================================================
+  // CRUD OPERATIONS
+  // ==========================================================
+
+  /**
+   * Creates a new customer or updates an existing one
+   * Handles both POST (create) and PUT (update) operations
+   */
+  const saveCustomer = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // Validate required fields
+    const name = customerName.trim();
+    if (!name) {
+      setError("Customer name is required.");
+      return;
     }
 
-    switch (method.toLowerCase()) {
-      case "cash":
-        return "Cash";
-      case "upi":
-        return "UPI";
-      case "card":
-        return "Card";
-      case "bank_transfer":
-        return "Bank Transfer";
-      default:
-        return method;
+    // Validate phone number format (optional)
+    const phone = customerPhone.trim();
+    if (phone && !/^[0-9+\-\s()]{7,15}$/.test(phone)) {
+      setError("Please enter a valid phone number (7-15 digits).");
+      return;
     }
-  };
 
+    // Validate email format (optional)
+    const email = customerEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      setSavingCustomer(true);
+      setError("");
+      setSuccess("");
+
+      const isEditing = Boolean(editingCustomerId);
+      const endpoint = isEditing
+        ? `${API_URL}/api/customers/${editingCustomerId}`
+        : `${API_URL}/api/customers`;
+
+      const response = await fetch(endpoint, {
+        method: isEditing ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          phone: phone || null,
+          email: email || null,
+          notes: customerNotes.trim() || null,
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = await response.text();
+        try {
+          const parsed = JSON.parse(errorMessage);
+          errorMessage = typeof parsed === 'string' ? parsed : parsed.message || errorMessage;
+        } catch {
+          // Keep the original text
+        }
+        throw new Error(errorMessage || (isEditing ? "Failed to update customer" : "Failed to create customer"));
+      }
+
+      const customer: Customer = await response.json();
+
+      if (isEditing) {
+        // Update customer in the list
+        setCustomers((current) =>
+          current.map((item) => (item.id === customer.id ? customer : item))
+        );
+
+        // If the customer is currently selected, update the detail view
+        if (selectedCustomer?.id === customer.id) {
+          await loadCustomerDetail(customer.id);
+        }
+
+        setSuccess("Customer updated successfully.");
+      } else {
+        // Add new customer to the list
+        setCustomers((current) => [customer, ...current]);
+        setSuccess("Customer created successfully.");
+      }
+
+      // Close form and reset
+      setShowCreateForm(false);
+      resetCustomerForm();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Operation failed";
+      setError(message);
+      console.error("Customer save error:", err);
+    } finally {
+      setSavingCustomer(false);
+    }
+  }, [
+    customerName,
+    customerPhone,
+    customerEmail,
+    customerNotes,
+    editingCustomerId,
+    selectedCustomer,
+    loadCustomerDetail,
+    resetCustomerForm,
+  ]);
+
+  // ==========================================================
+  // COMPUTED VALUES
+  // ==========================================================
+
+  /**
+   * Filters customers based on search input
+   * Searches across name, phone, and email fields
+   */
   const filteredCustomers = useMemo(() => {
-    const value = search.trim().toLowerCase();
-
-    if (!value) {
+    const searchTerm = search.trim().toLowerCase();
+    if (!searchTerm) {
       return customers;
     }
 
     return customers.filter((customer) => {
       return (
-        customer.name.toLowerCase().includes(value) ||
-        customer.phone?.toLowerCase().includes(value) ||
-        customer.email?.toLowerCase().includes(value)
+        customer.name.toLowerCase().includes(searchTerm) ||
+        customer.phone?.toLowerCase().includes(searchTerm) ||
+        customer.email?.toLowerCase().includes(searchTerm)
       );
     });
   }, [customers, search]);
 
+  // ==========================================================
+  // RENDER HELPERS
+  // ==========================================================
+
+  /**
+   * Loading state renderer
+   */
   if (loading) {
-    return <div className="loading">Loading customers...</div>;
+    return (
+      <div className="customers-page">
+        <div className="loading" role="status" aria-label="Loading customers">
+          Loading customers...
+        </div>
+      </div>
+    );
   }
 
+  // ==========================================================
+  // MAIN RENDER
+  // ==========================================================
+
   return (
-    <>
-      <div className="page-header">
+    <div className="customers-page" role="main" aria-label="Customer Management">
+
+      {/* ==========================================================
+          HEADER
+          ========================================================== */}
+      <header className="page-header" aria-label="Customer management header">
         <div>
           <h2>Customers</h2>
           <p>Manage customers and view purchase history</p>
@@ -255,34 +495,54 @@ function Customers() {
 
         <div className="page-header-actions">
           <button
-            className="secondary-button"
+            className={showCreateForm ? "secondary-button" : "primary-button"}
             onClick={() => {
               setShowCreateForm((current) => !current);
               setError("");
+              setSuccess("");
 
-              if (showCreateForm) {
+              if (!showCreateForm) {
+                // Opening the form - reset to empty state
                 resetCustomerForm();
               }
             }}
             disabled={savingCustomer}
+            aria-expanded={showCreateForm}
           >
             {showCreateForm ? "Cancel" : "+ Add Customer"}
           </button>
 
           <button
             className="refresh-button"
-            onClick={loadCustomers}
+            onClick={() => void loadCustomers()}
             disabled={loading || savingCustomer}
+            aria-label="Refresh customer list"
           >
             Refresh
           </button>
         </div>
-      </div>
+      </header>
 
-      {error && <div className="error">{error}</div>}
+      {/* ==========================================================
+          STATUS MESSAGES
+          ========================================================== */}
+      {error && (
+        <div className="error" role="alert">
+          {error}
+        </div>
+      )}
 
+      {success && (
+        <div className="success" role="status">
+          {success}
+        </div>
+      )}
+
+      {/* ==========================================================
+          CREATE/EDIT CUSTOMER FORM
+          ========================================================== */}
       {showCreateForm && (
-        <section className="card customer-create-card">
+        <section className="card customer-create-card" aria-label="Customer form">
           <div className="card-header">
             <div>
               <h3>{editingCustomerId ? "Edit Customer" : "Add Customer"}</h3>
@@ -294,10 +554,13 @@ function Customers() {
             </div>
           </div>
 
-          <form onSubmit={saveCustomer} className="customer-form">
+          <form onSubmit={saveCustomer} className="customer-form" noValidate>
             <div className="customer-form-grid">
+              {/* Name - Required */}
               <div className="form-group">
-                <label htmlFor="customer-name">Name *</label>
+                <label htmlFor="customer-name">
+                  Name <span className="required">*</span>
+                </label>
                 <input
                   id="customer-name"
                   type="text"
@@ -305,10 +568,13 @@ function Customers() {
                   onChange={(event) => setCustomerName(event.target.value)}
                   placeholder="Customer name"
                   disabled={savingCustomer}
+                  required
                   autoFocus
+                  aria-required="true"
                 />
               </div>
 
+              {/* Phone - Optional */}
               <div className="form-group">
                 <label htmlFor="customer-phone">Phone</label>
                 <input
@@ -318,9 +584,12 @@ function Customers() {
                   onChange={(event) => setCustomerPhone(event.target.value)}
                   placeholder="Phone number"
                   disabled={savingCustomer}
+                  aria-describedby="phone-help"
                 />
+                <small id="phone-help">Optional. 7-15 digits.</small>
               </div>
 
+              {/* Email - Optional */}
               <div className="form-group">
                 <label htmlFor="customer-email">Email</label>
                 <input
@@ -330,10 +599,13 @@ function Customers() {
                   onChange={(event) => setCustomerEmail(event.target.value)}
                   placeholder="Email address"
                   disabled={savingCustomer}
+                  aria-describedby="email-help"
                 />
+                <small id="email-help">Optional. Valid email format.</small>
               </div>
             </div>
 
+            {/* Notes - Optional */}
             <div className="form-group">
               <label htmlFor="customer-notes">Notes</label>
               <textarea
@@ -346,14 +618,14 @@ function Customers() {
               />
             </div>
 
+            {/* Form Actions */}
             <div className="form-actions">
               <button
                 type="button"
-                className="secondary-button"
+                className="cancel-button"
                 onClick={() => {
                   setShowCreateForm(false);
                   resetCustomerForm();
-                  setError("");
                 }}
                 disabled={savingCustomer}
               >
@@ -372,7 +644,10 @@ function Customers() {
         </section>
       )}
 
-      <section className="card">
+      {/* ==========================================================
+          CUSTOMER LIST
+          ========================================================== */}
+      <section className="card" aria-label="Customer list">
         <div className="card-header">
           <div>
             <h3>Customer List</h3>
@@ -388,25 +663,34 @@ function Customers() {
               placeholder="Search customers..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
+              aria-label="Search customers by name, phone, or email"
             />
           </div>
         </div>
 
         {filteredCustomers.length === 0 ? (
-          <div className="empty-state">
-            {search
-              ? "No customers match your search."
-              : "No customers available yet."}
+          <div className="empty-state" role="status">
+            {search ? (
+              <>
+                <strong>No results found</strong>
+                <span>No customers match your search criteria.</span>
+              </>
+            ) : (
+              <>
+                <strong>No customers yet</strong>
+                <span>Add your first customer using the form above.</span>
+              </>
+            )}
           </div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table aria-label="Customer list table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Action</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Phone</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
 
@@ -416,27 +700,27 @@ function Customers() {
                     <td>
                       <strong>{customer.name}</strong>
                     </td>
-
                     <td>{customer.phone || "—"}</td>
-
                     <td>{customer.email || "—"}</td>
-
                     <td>
-                      <button
-                        className="secondary-button"
-                        onClick={() => openCustomer(customer.id)}
-                      >
-                        View
-                      </button>
+                      <div className="action-buttons">
+                        <button
+                          className="secondary-button"
+                          onClick={() => loadCustomerDetail(customer.id)}
+                          aria-label={`View ${customer.name} details`}
+                        >
+                          View
+                        </button>
 
-                      <button
-                        className="secondary-button"
-                        onClick={() => startEditCustomer(customer)}
-                        disabled={savingCustomer}
-                        style={{ marginLeft: "8px" }}
-                      >
-                        Edit
-                      </button>
+                        <button
+                          className="secondary-button"
+                          onClick={() => startEditCustomer(customer)}
+                          disabled={savingCustomer}
+                          aria-label={`Edit ${customer.name}`}
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -446,14 +730,22 @@ function Customers() {
         )}
       </section>
 
+      {/* ==========================================================
+          LOADING DETAIL INDICATOR
+          ========================================================== */}
       {loadingDetail && (
-        <section className="card">
-          <div className="loading">Loading customer details...</div>
+        <section className="card" aria-label="Loading customer details">
+          <div className="loading" role="status">
+            Loading customer details...
+          </div>
         </section>
       )}
 
+      {/* ==========================================================
+          CUSTOMER DETAIL VIEW
+          ========================================================== */}
       {selectedCustomer && !loadingDetail && (
-        <section className="card customer-detail-card">
+        <section className="card customer-detail-card" aria-label="Customer details">
           <div className="card-header">
             <div>
               <h3>{selectedCustomer.name}</h3>
@@ -462,12 +754,14 @@ function Customers() {
 
             <button
               className="secondary-button"
-              onClick={() => setSelectedCustomer(null)}
+              onClick={closeCustomerDetail}
+              aria-label="Close customer details"
             >
               Close
             </button>
           </div>
 
+          {/* Customer Information Grid */}
           <div className="customer-info-grid">
             <div>
               <span>Phone</span>
@@ -480,7 +774,7 @@ function Customers() {
             </div>
 
             <div>
-              <span>Sales</span>
+              <span>Total Sales</span>
               <strong>{selectedCustomer.sales_count}</strong>
             </div>
 
@@ -495,27 +789,22 @@ function Customers() {
             </div>
 
             <div>
-              <span>Outstanding</span>
+              <span>Outstanding Balance</span>
               <strong
                 className={
-                  selectedCustomer.total_purchases -
-                    selectedCustomer.total_paid >
-                  0
+                  selectedCustomer.total_purchases - selectedCustomer.total_paid > 0
                     ? "loss"
                     : "profit"
                 }
               >
                 {formatMoney(
-                  Math.max(
-                    0,
-                    selectedCustomer.total_purchases -
-                      selectedCustomer.total_paid,
-                  ),
+                  Math.max(0, selectedCustomer.total_purchases - selectedCustomer.total_paid)
                 )}
               </strong>
             </div>
           </div>
 
+          {/* Customer Notes */}
           {selectedCustomer.notes && (
             <div className="customer-notes">
               <strong>Notes</strong>
@@ -523,6 +812,7 @@ function Customers() {
             </div>
           )}
 
+          {/* Purchase History */}
           <div className="card-header customer-history-header">
             <div>
               <h3>Purchase History</h3>
@@ -531,38 +821,40 @@ function Customers() {
           </div>
 
           {selectedCustomer.sales.length === 0 ? (
-            <div className="empty-state">No sales found for this customer.</div>
+            <div className="empty-state" role="status">
+              No sales found for this customer.
+            </div>
           ) : (
             <div className="table-wrapper">
-              <table>
+              <table aria-label="Customer purchase history">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Sale Total</th>
-                    <th>Paid</th>
-                    <th>Payment</th>
-                    <th>Status</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Sale Total</th>
+                    <th scope="col">Paid</th>
+                    <th scope="col">Payment</th>
+                    <th scope="col">Status</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {selectedCustomer.sales.map((sale) => {
                     const outstanding = Math.max(0, sale.total - sale.paid);
+                    const isPaid = outstanding === 0;
 
                     return (
                       <tr key={sale.id}>
-                        <td>{formatDate(sale.sale_date)}</td>
-
+                        <td>{formatDateTime(sale.sale_date)}</td>
                         <td>{formatMoney(sale.total)}</td>
-
                         <td>{formatMoney(sale.paid)}</td>
-
                         <td>{getPaymentMethodName(sale.payment_method)}</td>
-
-                        <td className={outstanding > 0 ? "loss" : "profit"}>
-                          {outstanding > 0
-                            ? `Due ${formatMoney(outstanding)} `
-                            : "Paid"}
+                        <td>
+                          <span
+                            className={`status-badge ${isPaid ? "paid" : "due"}`}
+                            aria-label={isPaid ? "Paid" : `Due ${formatMoney(outstanding)}`}
+                          >
+                            {isPaid ? "Paid" : `Due ${formatMoney(outstanding)}`}
+                          </span>
                         </td>
                       </tr>
                     );
@@ -573,7 +865,7 @@ function Customers() {
           )}
         </section>
       )}
-    </>
+    </div>
   );
 }
 

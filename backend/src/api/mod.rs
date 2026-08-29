@@ -35,6 +35,10 @@ pub fn router(state: AppState) -> Router {
             get(products::list_inventory_movements),
         )
         .route(
+            "/api/products/{id}",
+            axum::routing::put(products::update_product),
+        )
+        .route(
             "/api/customers",
             get(customers::list_customers).post(customers::create_customer),
         )

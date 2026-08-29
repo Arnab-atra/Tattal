@@ -1,0 +1,433 @@
+/* ============================================================
+   SETTINGS PAGE STYLES
+   
+   This file contains all styles for the Settings page including:
+   - Page layout and header
+   - Settings cards and items
+   - Toggle switches
+   - Reset confirmation
+   - Responsive design
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.settings-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.settings-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.settings-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+.settings-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.settings-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.settings-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.settings-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.settings-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   SETTINGS LIST
+   ============================================================ */
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 20px 20px;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.settings-item:last-child {
+  border-bottom: 0;
+}
+
+/* Settings item info */
+.settings-item-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-item-icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.settings-item-icon.danger {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.settings-item-info>div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings-item-info strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-item-info span {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.settings-item-info .reset-warning {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ============================================================
+   TOGGLE SWITCH
+   ============================================================ */
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--border-strong);
+  transition: background 200ms ease;
+}
+
+.toggle-track.active {
+  background: var(--primary);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 200ms ease;
+}
+
+.toggle-track.active .toggle-thumb {
+  transform: translateX(20px);
+}
+
+.toggle-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: left;
+}
+
+/* ============================================================
+   SETTINGS BUTTONS
+   ============================================================ */
+
+.settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.settings-button.danger {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.settings-button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 20%, var(--surface));
+}
+
+.settings-button.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.settings-button.secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.settings-button.confirm {
+  background: var(--danger);
+  color: white;
+}
+
+.settings-button.confirm:hover:not(:disabled) {
+  background: var(--danger-hover, #b91c1c);
+}
+
+.settings-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   CONFIRM ACTIONS
+   ============================================================ */
+
+.settings-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   ABOUT SECTION
+   ============================================================ */
+
+.settings-item.about-item {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.about-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.about-icon {
+  display: grid;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.about-content>div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.about-content strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 730;
+}
+
+.about-content>div>span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.about-description {
+  margin-top: 4px;
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .settings-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-height: auto;
+    padding: 16px 0;
+  }
+
+  .settings-item-info {
+    align-items: flex-start;
+  }
+
+  .settings-toggle {
+    align-self: flex-start;
+  }
+
+  .settings-confirm-actions {
+    align-self: flex-start;
+  }
+
+  .settings-list {
+    padding: 8px 16px 16px;
+  }
+
+  .about-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .about-content>div {
+    align-items: center;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .settings-page {
+    gap: 18px;
+  }
+
+  .settings-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .settings-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .settings-item {
+    padding: 14px 0;
+  }
+
+  .settings-item-info {
+    gap: 10px;
+  }
+
+  .settings-item-icon {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .settings-button {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 10px;
+  }
+
+  .settings-confirm-actions {
+    flex-wrap: wrap;
+  }
+
+  .settings-confirm-actions button {
+    flex: 1;
+    min-width: 80px;
+  }
+}

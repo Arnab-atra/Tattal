@@ -1,0 +1,737 @@
+/* ============================================================
+   PRODUCTS PAGE STYLES
+   
+   This file contains all styles for the Products page including:
+   - Page layout and header
+   - Product create/edit form
+   - Product list table
+   - Stock management actions
+   - Profit/Loss indicators
+   - Modal styles for stock addition
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.products-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.products-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.products-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.products-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Refresh Button */
+.products-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.products-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.products-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Primary Button (Submit) */
+.products-page .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.products-page .primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.products-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Secondary Button (Cancel) */
+.products-page .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.products-page .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.products-page .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Small action buttons in table */
+.products-page .action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.products-page .action-button:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--primary);
+}
+
+.products-page .action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.products-page .action-button.edit-button:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--primary);
+}
+
+.products-page .action-button.stock-button:hover:not(:disabled) {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
+  color: var(--success);
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.products-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Success message */
+.products-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.products-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.products-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.products-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.products-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   PRODUCT FORM
+   ============================================================ */
+
+.products-page .product-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+.products-page .form-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.products-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.products-page .form-group label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.products-page .form-group input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 12px;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.products-page .form-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.products-page .form-group input:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.products-page .form-group input:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.products-page .form-group input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.products-page .form-group small {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* Form Actions */
+.products-page .form-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.products-page .form-actions button {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.products-page .form-actions button[type="submit"] {
+  background: var(--primary);
+  color: #fff;
+}
+
+.products-page .form-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.products-page .form-actions button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.products-page .form-actions .cancel-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.products-page .form-actions .cancel-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.products-page .form-actions .cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ============================================================
+   PRODUCT LIST TABLE
+   ============================================================ */
+
+.products-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.products-page table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.products-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.products-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.products-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.products-page tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+.products-page td strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Profit/Loss indicators */
+.products-page td .profit,
+.products-page .profit {
+  color: var(--success);
+  font-weight: 750;
+}
+
+.products-page td .loss,
+.products-page .loss {
+  color: var(--danger);
+  font-weight: 750;
+}
+
+/* Stock quantity badge */
+.products-page .stock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.products-page .stock-badge.in-stock {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+.products-page .stock-badge.low-stock {
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  color: var(--warning);
+}
+
+.products-page .stock-badge.out-of-stock {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+/* Product actions container */
+.products-page .product-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================================
+   MODAL STYLES (for stock addition)
+   ============================================================ */
+
+.products-page .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.products-page .modal {
+  max-width: 420px;
+  width: 90%;
+  padding: 28px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 200ms ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.products-page .modal h3 {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.products-page .modal p {
+  margin: 0 0 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.products-page .modal .form-group {
+  margin-bottom: 20px;
+}
+
+.products-page .modal .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.products-page .modal .form-group input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.products-page .modal .form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.products-page .modal .modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.products-page .modal .modal-actions button {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.products-page .modal .modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.products-page .modal .modal-actions .confirm-button {
+  background: var(--success);
+  color: white;
+}
+
+.products-page .modal .modal-actions .confirm-button:hover:not(:disabled) {
+  background: var(--success-hover);
+  transform: translateY(-1px);
+}
+
+.products-page .modal .modal-actions .cancel-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.products-page .modal .modal-actions .cancel-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.products-page .loading {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.products-page .empty-state {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.products-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Large tablets */
+@media (max-width: 1200px) {
+  .products-page .product-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .products-page .form-actions {
+    grid-column: 1 / -1;
+    align-items: stretch;
+  }
+}
+
+/* Tablets */
+@media (max-width: 992px) {
+  .products-page .product-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .products-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .products-page .refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .products-page .product-form {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .products-page .form-actions {
+    flex-direction: column;
+  }
+
+  .products-page .form-actions button {
+    width: 100%;
+  }
+
+  .products-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .products-page .product-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .products-page .product-actions .action-button {
+    width: 100%;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .products-page {
+    gap: 18px;
+  }
+
+  .products-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .products-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .products-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .products-page .modal {
+    padding: 20px;
+  }
+
+  .products-page .modal .modal-actions {
+    flex-direction: column;
+  }
+}

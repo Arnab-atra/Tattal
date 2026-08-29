@@ -1,4 +1,15 @@
-import { useEffect, useState } from "react";
+// ============================================================
+// App.tsx
+//
+// The main application component that provides:
+// - Theme management (light/dark mode)
+// - Sidebar navigation with collapse support
+// - Mobile-responsive sidebar
+// - Route configuration for all pages
+// - Topbar with theme toggle and status indicator
+// ============================================================
+
+import { useCallback, useEffect, useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import {
   BarChart3,
@@ -11,7 +22,7 @@ import {
   Menu,
   Moon,
   Package,
-  Settings,
+  Settings as SettingsIcon,
   ShoppingCart,
   Sun,
   Users,
@@ -27,12 +38,42 @@ import Customers from "./pages/Customers";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings"; // Import the Settings component
 
 import "./App.css";
 
+// ============================================================
+// TYPES
+// ============================================================
+
 type Theme = "light" | "dark";
 
-const navigation = [
+/**
+ * Navigation item configuration
+ */
+type NavItem = {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  end?: boolean;
+};
+
+/**
+ * Navigation section configuration
+ */
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+/**
+ * Navigation structure - defines all routes and their display
+ */
+const navigation: NavSection[] = [
   {
     label: "Overview",
     items: [
@@ -53,7 +94,17 @@ const navigation = [
   },
 ];
 
-function getInitialTheme(): Theme {
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+
+/**
+ * Gets the initial theme based on:
+ * 1. Saved preference in localStorage
+ * 2. System preference (prefers-color-scheme)
+ * 3. Default to light mode
+ */
+const getInitialTheme = (): Theme => {
   const saved = localStorage.getItem("tattal-theme");
 
   if (saved === "dark" || saved === "light") {
@@ -63,18 +114,54 @@ function getInitialTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
-}
+};
+
+/**
+ * Gets the initial sidebar state from localStorage
+ */
+const getInitialSidebarState = (): boolean => {
+  const saved = localStorage.getItem("tattal-sidebar-collapsed");
+  return saved === "true";
+};
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 
 function App() {
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    getInitialSidebarState,
+  );
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // ==========================================================
+  // EFFECTS
+  // ==========================================================
+
+  /**
+   * Updates the theme whenever it changes
+   * Saves the preference to localStorage
+   */
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("tattal-theme", theme);
   }, [theme]);
 
+  /**
+   * Saves sidebar state to localStorage when it changes
+   */
+  useEffect(() => {
+    localStorage.setItem("tattal-sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  /**
+   * Auto-closes mobile sidebar on window resize to desktop
+   */
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 900) {
@@ -87,16 +174,47 @@ function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const toggleTheme = () => {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-  };
+  // ==========================================================
+  // HANDLERS
+  // ==========================================================
 
-  const closeMobileSidebar = () => {
+  /**
+   * Toggles between light and dark themes
+   */
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }, []);
+
+  /**
+   * Toggles sidebar collapse state
+   */
+  const toggleSidebarCollapse = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev);
+  }, []);
+
+  /**
+   * Closes the mobile sidebar
+   */
+  const closeMobileSidebar = useCallback(() => {
     setMobileSidebarOpen(false);
-  };
+  }, []);
+
+  /**
+   * Opens the mobile sidebar
+   */
+  const openMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen(true);
+  }, []);
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <div className="app-shell">
+      {/* ==========================================================
+          MOBILE SIDEBAR BACKDROP
+          ========================================================== */}
       {mobileSidebarOpen && (
         <button
           className="sidebar-backdrop"
@@ -105,6 +223,9 @@ function App() {
         />
       )}
 
+      {/* ==========================================================
+          SIDEBAR
+          ========================================================== */}
       <aside
         className={[
           "sidebar",
@@ -114,6 +235,7 @@ function App() {
           .filter(Boolean)
           .join(" ")}
       >
+        {/* Sidebar Header */}
         <div className="sidebar-header">
           <div className="brand">
             <div className="brand-mark">
@@ -137,8 +259,9 @@ function App() {
           </button>
         </div>
 
+        {/* Navigation */}
         <div className="sidebar-scroll">
-          <nav className="sidebar-nav">
+          <nav className="sidebar-nav" aria-label="Main navigation">
             {navigation.map((section) => (
               <div className="nav-section" key={section.label}>
                 {!sidebarCollapsed && (
@@ -161,37 +284,43 @@ function App() {
                     >
                       <Icon size={19} strokeWidth={2} />
 
-                      {!sidebarCollapsed && (
-                        <span>{item.label}</span>
-                      )}
+                      {!sidebarCollapsed && <span>{item.label}</span>}
                     </NavLink>
                   );
                 })}
               </div>
             ))}
 
+            {/* Settings Section - Now a real link */}
             <div className="nav-section nav-section-settings">
               {!sidebarCollapsed && (
                 <div className="nav-section-title">System</div>
               )}
 
-              <button
-                className="nav-link nav-link-button"
+              <NavLink
+                to="/settings"
+                onClick={closeMobileSidebar}
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? "active" : ""}`
+                }
                 title={sidebarCollapsed ? "Settings" : undefined}
-                type="button"
               >
-                <Settings size={19} strokeWidth={2} />
+                <SettingsIcon size={19} strokeWidth={2} />
                 {!sidebarCollapsed && <span>Settings</span>}
-              </button>
+              </NavLink>
             </div>
           </nav>
         </div>
 
+        {/* Sidebar Bottom */}
         <div className="sidebar-bottom">
           <button
             className="collapse-button"
-            onClick={() => setSidebarCollapsed((value) => !value)}
+            onClick={toggleSidebarCollapse}
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
           >
             {sidebarCollapsed ? (
               <ChevronRight size={18} />
@@ -211,12 +340,16 @@ function App() {
         </div>
       </aside>
 
+      {/* ==========================================================
+          MAIN AREA
+          ========================================================== */}
       <div className="main-area">
+        {/* Topbar */}
         <header className="topbar">
           <div className="topbar-left">
             <button
               className="icon-button mobile-menu-button"
-              onClick={() => setMobileSidebarOpen(true)}
+              onClick={openMobileSidebar}
               aria-label="Open navigation"
             >
               <Menu size={21} />
@@ -239,11 +372,7 @@ function App() {
               }
               aria-label="Toggle theme"
             >
-              {theme === "dark" ? (
-                <Sun size={19} />
-              ) : (
-                <Moon size={19} />
-              )}
+              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
             </button>
 
             <div className="topbar-divider" />
@@ -255,6 +384,7 @@ function App() {
           </div>
         </header>
 
+        {/* Main Content */}
         <main className="content">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -265,6 +395,17 @@ function App() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route
+              path="/settings"
+              element={
+                <Settings
+                  theme={theme}
+                  sidebarCollapsed={sidebarCollapsed}
+                  onThemeToggle={toggleTheme}
+                  onSidebarToggle={toggleSidebarCollapse}
+                />
+              }
+            />
           </Routes>
         </main>
       </div>

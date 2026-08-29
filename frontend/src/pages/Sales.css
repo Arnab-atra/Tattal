@@ -1,0 +1,807 @@
+/* ============================================================
+   SALES PAGE STYLES
+   
+   This file contains all styles for the Sales page including:
+   - Page layout and header
+   - New sale form with product items
+   - Sale summary with totals
+   - Sales history table
+   - Sale details view
+   - Responsive breakpoints
+   ============================================================ */
+
+/* ============================================================
+   PAGE CONTAINER
+   ============================================================ */
+
+.sales-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.sales-page .page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sales-page .page-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.sales-page .page-header p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* Primary Button (Complete Sale) */
+.sales-page .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.sales-page .primary-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.sales-page .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* Secondary Button (Add Item, Clear, View) */
+.sales-page .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.sales-page .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.sales-page .secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Remove Item Button */
+.sales-page .remove-item-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.sales-page .remove-item-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  border-color: var(--danger);
+}
+
+.sales-page .remove-item-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Refresh Button */
+.sales-page .refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.sales-page .refresh-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  transform: translateY(-1px);
+}
+
+.sales-page .refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ============================================================
+   STATUS MESSAGES
+   ============================================================ */
+
+/* Error message */
+.sales-page .error {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Success message */
+.sales-page .success {
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--success) 30%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   BASE CARD STYLES
+   ============================================================ */
+
+.sales-page .card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.sales-page .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+}
+
+.sales-page .card-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.sales-page .card-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   SALES LAYOUT (Form + Summary)
+   ============================================================ */
+
+.sales-page .sales-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.65fr);
+  align-items: start;
+  gap: 18px;
+}
+
+/* ============================================================
+   SALE FORM
+   ============================================================ */
+
+.sales-page .sale-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+}
+
+.sales-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sales-page .form-group label {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sales-page .form-group label .required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.sales-page .form-group input,
+.sales-page .form-group select,
+.sales-page .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.sales-page .form-group input,
+.sales-page .form-group select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.sales-page .form-group textarea {
+  resize: vertical;
+  min-height: 82px;
+  padding: 11px;
+}
+
+.sales-page .form-group input:focus,
+.sales-page .form-group select:focus,
+.sales-page .form-group textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.sales-page .form-group input:disabled,
+.sales-page .form-group select:disabled,
+.sales-page .form-group textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.sales-page .form-group input::placeholder,
+.sales-page .form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.sales-page .form-group small {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* Form grid for two columns */
+.sales-page .sale-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ============================================================
+   SALE ITEMS
+   ============================================================ */
+
+.sales-page .sale-items-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 2px;
+}
+
+.sales-page .sale-items-header h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.sales-page .sale-items-header span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* Sale items container */
+.sales-page .sales-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Individual sale item */
+.sales-page .sale-item {
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-muted);
+}
+
+.sales-page .sale-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 13px;
+}
+
+.sales-page .sale-item-header strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* Sale item grid */
+.sales-page .sale-item-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) 110px 140px;
+  gap: 12px;
+  align-items: end;
+}
+
+/* Read-only field for unit price */
+.sales-page .readonly-field {
+  display: flex;
+  min-height: 40px;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.sales-page .readonly-field.empty {
+  color: var(--text-muted);
+}
+
+/* Stock info */
+.sales-page .sale-item-stock {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sales-page .sale-item-stock strong {
+  color: var(--text-secondary);
+}
+
+/* Item total */
+.sales-page .sale-item-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+
+.sales-page .sale-item-total span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sales-page .sale-item-total strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ============================================================
+   FORM ACTIONS
+   ============================================================ */
+
+.sales-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 2px;
+}
+
+.sales-page .form-actions button {
+  min-height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.sales-page .form-actions button[type="submit"] {
+  background: var(--primary);
+  color: white;
+}
+
+.sales-page .form-actions button[type="submit"]:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.sales-page .form-actions button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.sales-page .form-actions .secondary-button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.sales-page .form-actions .secondary-button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* ============================================================
+   SALE SUMMARY
+   ============================================================ */
+
+.sales-page .sale-summary {
+  position: sticky;
+  top: 20px;
+}
+
+.sales-page .sale-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 18px 20px 10px;
+}
+
+.sales-page .sale-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sales-page .sale-summary-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.sales-page .sale-summary-row span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.sales-page .sale-summary-row strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.sales-page .sale-summary-row .sale-total {
+  color: var(--success);
+  font-size: 22px;
+  font-weight: 760;
+}
+
+/* Payment method summary */
+.sales-page .sale-summary-payment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 20px 20px;
+  padding: 12px 16px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.sales-page .sale-summary-payment span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sales-page .sale-summary-payment strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* ============================================================
+   SALES HISTORY TABLE
+   ============================================================ */
+
+.sales-page .table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 12px 20px 20px;
+}
+
+.sales-page table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+}
+
+.sales-page th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sales-page td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.sales-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sales-page .sale-history-row {
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.sales-page .sale-history-row:hover td {
+  background: var(--surface-muted);
+}
+
+.sales-page td strong {
+  color: var(--text);
+}
+
+/* Status badges */
+.sales-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sales-page .status-badge.paid {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+}
+
+.sales-page .status-badge.partial {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+}
+
+.sales-page .status-badge.unpaid {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+/* Sale detail view */
+.sales-page .sale-detail-payment {
+  padding: 0 20px 20px;
+}
+
+.sales-page .sale-detail-payment .payment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sales-page .sale-detail-payment .payment-item:last-child {
+  border-bottom: 0;
+}
+
+.sales-page .sale-detail-payment .payment-item strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.sales-page .sale-detail-payment .payment-item span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   EMPTY STATES & LOADING
+   ============================================================ */
+
+.sales-page .empty-state {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  gap: 8px;
+}
+
+.sales-page .empty-state strong {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.sales-page .loading {
+  display: flex;
+  min-height: 250px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+/* Tablets */
+@media (max-width: 1100px) {
+  .sales-page .sales-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-page .sale-summary {
+    position: static;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+  .sales-page .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sales-page .refresh-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sales-page .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sales-page .sale-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-page .sale-item-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sales-page .sale-item-grid .form-group:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .sales-page .sale-items-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sales-page .sale-items-header .secondary-button {
+    width: 100%;
+  }
+
+  .sales-page .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .sales-page .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .sales-page {
+    gap: 18px;
+  }
+
+  .sales-page .page-header h2 {
+    font-size: 24px;
+  }
+
+  .sales-page .card-header {
+    padding: 17px 16px 0;
+  }
+
+  .sales-page .sale-form {
+    padding: 16px;
+  }
+
+  .sales-page .sale-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-page .sale-item-grid .form-group:first-child {
+    grid-column: auto;
+  }
+
+  .sales-page .sale-summary-content {
+    padding: 14px 16px 8px;
+  }
+
+  .sales-page .sale-summary-payment {
+    margin: 12px 16px 16px;
+  }
+
+  .sales-page .table-wrapper {
+    padding: 8px 14px 14px;
+  }
+
+  .sales-page .sale-summary-row .sale-total {
+    font-size: 18px;
+  }
+}
