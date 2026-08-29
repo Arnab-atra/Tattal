@@ -162,10 +162,7 @@ pub async fn update_product(
     .await
     .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
 
-    let product = product.ok_or((
-        StatusCode::NOT_FOUND,
-        "Product not found".to_string(),
-    ))?;
+    let product = product.ok_or((StatusCode::NOT_FOUND, "Product not found".to_string()))?;
 
     let response = ProductResponse {
         id: product.id,

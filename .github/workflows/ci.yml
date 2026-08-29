@@ -1,19 +1,34 @@
-name: Sales Tracker CI
+name: Tattal CI
 
 on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
+concurrency:
+  group: tattal-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24
+  RUST_TOOLCHAIN: stable
+
 jobs:
+  # ============================================================
+  # FRONTEND
+  # ============================================================
+
   frontend:
-    name: Frontend
+    name: Frontend - Lint & Build
     runs-on: ubuntu-latest
 
     defaults:
@@ -27,7 +42,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -40,8 +55,12 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+  # ============================================================
+  # BACKEND
+  # ============================================================
+
   backend:
-    name: Backend
+    name: Backend - Format, Check, Clippy & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -51,31 +70,38 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: rustfmt, clippy
 
-      - name: Cache Cargo
-        uses: actions/cache@v4
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/
-            ~/.cargo/git/
-            backend/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('backend/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          workspaces: |
+            backend
 
-      - name: Check backend
+      - name: Check formatting
         working-directory: backend
-        run: cargo check
+        run: cargo fmt --all -- --check
+
+      - name: Cargo check
+        working-directory: backend
+        run: cargo check --locked
+
+      - name: Clippy
+        working-directory: backend
+        run: cargo clippy --locked --all-targets --all-features
 
       - name: Test backend
         working-directory: backend
-        run: cargo test
+        run: cargo test --locked --all-features
 
-  tauri:
-    name: Tauri
-    runs-on: ubuntu-latest
+  # ============================================================
+  # LINUX
+  # ============================================================
+
+  linux:
+    name: Linux - Tauri Build
+    runs-on: ubuntu-22.04
+
     needs:
       - frontend
       - backend
@@ -87,21 +113,23 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
+
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
             build-essential \
             curl \
             wget \
             file \
-            libxdo-dev \
             libssl-dev \
+            libxdo-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -112,8 +140,117 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            src-tauri
+
+      - name: Check Tauri formatting
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
 
       - name: Check Tauri
         working-directory: src-tauri
-        run: cargo check
+        run: cargo check --locked
+
+      - name: Build Linux application
+        run: npm --prefix frontend exec tauri -- build --config src-tauri/tauri.conf.json
+
+      - name: Verify Linux bundles
+        run: |
+          test -f src-tauri/target/release/bundle/deb/*.deb
+          test -f src-tauri/target/release/bundle/appimage/*.AppImage
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tattal-linux
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+
+  # ============================================================
+  # WINDOWS
+  # ============================================================
+
+  windows:
+    name: Windows - Tauri Build
+    runs-on: windows-latest
+
+    needs:
+      - frontend
+      - backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            src-tauri
+
+      - name: Check Tauri formatting
+        working-directory: src-tauri
+        run: cargo fmt --all -- --check
+
+      - name: Check Tauri
+        working-directory: src-tauri
+        run: cargo check --locked
+
+      - name: Build Windows application
+        shell: pwsh
+        run: |
+          npm --prefix frontend exec tauri -- build --config src-tauri/tauri.conf.json
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tattal-windows
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+
+  # ============================================================
+  # FINAL STATUS
+  # ============================================================
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+
+    needs:
+      - frontend
+      - backend
+      - linux
+      - windows
+
+    if: ${{ success() }}
+
+    steps:
+      - name: CI passed
+        run: echo "All Tattal CI checks passed successfully."

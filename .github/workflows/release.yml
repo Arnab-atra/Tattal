@@ -1,0 +1,162 @@
+name: Tattal Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tattal-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  # ============================================================
+  # LINUX RELEASE
+  # ============================================================
+
+  linux:
+    name: Linux Release
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.1-dev \
+            patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            src-tauri
+
+      - name: Verify backend
+        working-directory: backend
+        run: cargo test --locked --all-features
+
+      - name: Build Linux release
+        uses: tauri-apps/tauri-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: src-tauri
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: "Tattal ${{ github.event.inputs.tag || github.ref_name }}"
+          releaseBody: |
+            ## Tattal
+
+            Sales and inventory management application.
+
+            ### Supported platforms
+
+            - Linux
+            - Windows
+
+            ### Linux downloads
+
+            Choose the appropriate Linux package from the release assets.
+          releaseDraft: false
+          prerelease: false
+
+  # ============================================================
+  # WINDOWS RELEASE
+  # ============================================================
+
+  windows:
+    name: Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+            src-tauri
+
+      - name: Verify backend
+        working-directory: backend
+        run: cargo test --locked --all-features
+
+      - name: Build Windows release
+        uses: tauri-apps/tauri-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: src-tauri
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: "Tattal ${{ github.event.inputs.tag || github.ref_name }}"
+          releaseBody: |
+            ## Tattal
+
+            Sales and inventory management application.
+
+            ### Supported platforms
+
+            - Linux
+            - Windows
+
+            ### Windows downloads
+
+            Choose the MSI installer from the release assets.
+          releaseDraft: false
+          prerelease: false
