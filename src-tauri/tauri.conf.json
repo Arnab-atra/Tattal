@@ -32,7 +32,7 @@
   "bundle": {
     "active": true,
 
-    "targets": ["deb", "appimage", "msi", "nsis"],
+    "targets": ["deb", "rpm", "appimage", "msi", "nsis"],
 
     "category": "Business",
 

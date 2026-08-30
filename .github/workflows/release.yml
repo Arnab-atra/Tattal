@@ -5,13 +5,6 @@ on:
     tags:
       - "v*.*.*"
 
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag to build"
-        required: true
-        type: string
-
 permissions:
   contents: write
 
@@ -19,16 +12,14 @@ concurrency:
   group: tattal-release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NODE_VERSION: 24
-
 jobs:
+
   # ============================================================
-  # LINUX RELEASE
+  # LINUX
   # ============================================================
 
   linux:
-    name: Linux Release
+    name: Linux - DEB RPM AppImage
     runs-on: ubuntu-22.04
 
     steps:
@@ -49,12 +40,13 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             libwebkit2gtk-4.1-dev \
-            patchelf
+            patchelf \
+            rpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -64,6 +56,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -72,40 +66,62 @@ jobs:
             backend
             src-tauri
 
-      - name: Verify backend
-        working-directory: backend
-        run: cargo test --locked --all-features
+      - name: Check Rust formatting
+        run: |
+          cargo fmt \
+            --manifest-path backend/Cargo.toml \
+            --all \
+            -- \
+            --check
 
-      - name: Build Linux release
+          cargo fmt \
+            --manifest-path src-tauri/Cargo.toml \
+            --all \
+            -- \
+            --check
+
+      - name: Check backend
+        run: cargo check --manifest-path backend/Cargo.toml --locked
+
+      - name: Check Tauri
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Build and publish Linux
         uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: src-tauri
-          tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: "Tattal ${{ github.event.inputs.tag || github.ref_name }}"
+          tagName: ${{ github.ref_name }}
+          releaseName: "Tattal ${{ github.ref_name }}"
           releaseBody: |
-            ## Tattal
+            ## Tattal ${{ github.ref_name }}
 
-            Sales and inventory management application.
+            Local business sales and inventory management application.
 
-            ### Supported platforms
+            ### Linux
 
-            - Linux
-            - Windows
+            - `.deb` — Debian / Ubuntu and compatible distributions
+            - `.rpm` — Fedora / RHEL / openSUSE and compatible distributions
+            - `.AppImage` — Portable Linux application
 
-            ### Linux downloads
+            ### Windows
 
-            Choose the appropriate Linux package from the release assets.
-          releaseDraft: false
+            - `.exe` — NSIS installer
+            - `.msi` — Windows Installer
+
+            Download the installer appropriate for your operating system.
+          releaseDraft: true
           prerelease: false
+          args: --bundles deb,rpm,appimage
+
 
   # ============================================================
-  # WINDOWS RELEASE
+  # WINDOWS
   # ============================================================
 
   windows:
-    name: Windows Release
+    name: Windows - MSI NSIS
     runs-on: windows-latest
 
     steps:
@@ -115,7 +131,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -125,6 +141,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -133,30 +151,52 @@ jobs:
             backend
             src-tauri
 
-      - name: Verify backend
-        working-directory: backend
-        run: cargo test --locked --all-features
+      - name: Check Rust formatting
+        shell: pwsh
+        run: |
+          cargo fmt `
+            --manifest-path backend/Cargo.toml `
+            --all `
+            -- `
+            --check
 
-      - name: Build Windows release
+          cargo fmt `
+            --manifest-path src-tauri/Cargo.toml `
+            --all `
+            -- `
+            --check
+
+      - name: Check backend
+        run: cargo check --manifest-path backend/Cargo.toml --locked
+
+      - name: Check Tauri
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Build Windows installers
         uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: src-tauri
-          tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: "Tattal ${{ github.event.inputs.tag || github.ref_name }}"
+          tagName: ${{ github.ref_name }}
+          releaseName: "Tattal ${{ github.ref_name }}"
           releaseBody: |
-            ## Tattal
+            ## Tattal ${{ github.ref_name }}
 
-            Sales and inventory management application.
+            Local business sales and inventory management application.
 
-            ### Supported platforms
+            ### Windows
 
-            - Linux
-            - Windows
+            - `.exe` — NSIS installer
+            - `.msi` — Windows Installer
 
-            ### Windows downloads
+            ### Linux
 
-            Choose the MSI installer from the release assets.
-          releaseDraft: false
+            - `.deb` — Debian / Ubuntu and compatible distributions
+            - `.rpm` — Fedora / RHEL / openSUSE and compatible distributions
+            - `.AppImage` — Portable Linux application
+
+            Download the installer appropriate for your operating system.
+          releaseDraft: true
           prerelease: false
+          args: --bundles msi,nsis
