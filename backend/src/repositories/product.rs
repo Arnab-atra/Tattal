@@ -195,9 +195,7 @@ pub async fn update_product(
     Ok(Some(product))
 }
 
-pub async fn list_products(
-    pool: &SqlitePool,
-) -> Result<Vec<Product>, sqlx::Error> {
+pub async fn list_products(pool: &SqlitePool) -> Result<Vec<Product>, sqlx::Error> {
     sqlx::query_as::<_, Product>(
         r#"
         SELECT
