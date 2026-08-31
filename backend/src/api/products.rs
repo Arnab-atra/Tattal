@@ -1,9 +1,15 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
 use crate::api::dashboard::AppState;
 use crate::models::product::Product;
+use crate::repositories::product;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateProductRequest {
@@ -28,78 +34,9 @@ pub struct ProductResponse {
     pub updated_at: String,
 }
 
-pub async fn create_product(
-    State(state): State<AppState>,
-    Json(request): Json<CreateProductRequest>,
-) -> Result<(StatusCode, Json<ProductResponse>), (StatusCode, String)> {
-    let product = crate::repositories::product::create_product(
-        &state.pool,
-        &request.name,
-        request.sku.as_deref(),
-        request.category.as_deref(),
-        request.cost_price,
-        request.selling_price,
-        request.stock_quantity,
-    )
-    .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-
-    let response = ProductResponse {
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        category: product.category,
-        cost_price: product.cost_price,
-        selling_price: product.selling_price,
-        stock_quantity: product.stock_quantity,
-        created_at: product.created_at.to_rfc3339(),
-        updated_at: product.updated_at.to_rfc3339(),
-    };
-
-    Ok((StatusCode::CREATED, Json(response)))
-}
-
-pub async fn list_products(
-    State(state): State<AppState>,
-) -> Result<Json<Vec<ProductResponse>>, (StatusCode, String)> {
-    let rows = sqlx::query(
-        r#"
-        SELECT
-            id,
-            name,
-            sku,
-            category,
-            cost_price,
-            selling_price,
-            stock_quantity,
-            created_at,
-            updated_at
-        FROM products
-        ORDER BY created_at DESC
-        "#,
-    )
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-
-    let products: Vec<Product> = rows
-        .into_iter()
-        .map(|row| Product {
-            id: row.get("id"),
-            name: row.get("name"),
-            sku: row.get("sku"),
-            category: row.get("category"),
-            cost_price: row.get("cost_price"),
-            selling_price: row.get("selling_price"),
-            stock_quantity: row.get("stock_quantity"),
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        })
-        .collect();
-
-    let response = products
-        .into_iter()
-        .map(|product| ProductResponse {
+impl From<Product> for ProductResponse {
+    fn from(product: Product) -> Self {
+        Self {
             id: product.id,
             name: product.name,
             sku: product.sku,
@@ -109,10 +46,67 @@ pub async fn list_products(
             stock_quantity: product.stock_quantity,
             created_at: product.created_at.to_rfc3339(),
             updated_at: product.updated_at.to_rfc3339(),
-        })
-        .collect();
+        }
+    }
+}
 
-    Ok(Json(response))
+pub async fn create_product(
+    State(state): State<AppState>,
+    Json(request): Json<CreateProductRequest>,
+) -> Result<(StatusCode, Json<ProductResponse>), (StatusCode, String)> {
+    if request.name.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Product name is required".to_string(),
+        ));
+    }
+
+    if request.cost_price < 0 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Cost price cannot be negative".to_string(),
+        ));
+    }
+
+    if request.selling_price < 0 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Selling price cannot be negative".to_string(),
+        ));
+    }
+
+    if request.stock_quantity < 0 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "Stock quantity cannot be negative".to_string(),
+        ));
+    }
+
+    let product = product::create_product(
+        &state.pool,
+        request.name.trim(),
+        request.sku.as_deref(),
+        request.category.as_deref(),
+        request.cost_price,
+        request.selling_price,
+        request.stock_quantity,
+    )
+    .await
+    .map_err(map_database_error)?;
+
+    Ok((StatusCode::CREATED, Json(ProductResponse::from(product))))
+}
+
+pub async fn list_products(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProductResponse>>, (StatusCode, String)> {
+    let products = product::list_products(&state.pool)
+        .await
+        .map_err(map_database_error)?;
+
+    Ok(Json(
+        products.into_iter().map(ProductResponse::from).collect(),
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,7 +120,7 @@ pub struct UpdateProductRequest {
 
 pub async fn update_product(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    Path(id): Path<String>,
     Json(request): Json<UpdateProductRequest>,
 ) -> Result<Json<ProductResponse>, (StatusCode, String)> {
     if request.name.trim().is_empty() {
@@ -150,7 +144,7 @@ pub async fn update_product(
         ));
     }
 
-    let product = crate::repositories::product::update_product(
+    let product = product::update_product(
         &state.pool,
         &id,
         request.name.trim(),
@@ -160,23 +154,11 @@ pub async fn update_product(
         request.selling_price,
     )
     .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    .map_err(map_database_error)?;
 
     let product = product.ok_or((StatusCode::NOT_FOUND, "Product not found".to_string()))?;
 
-    let response = ProductResponse {
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        category: product.category,
-        cost_price: product.cost_price,
-        selling_price: product.selling_price,
-        stock_quantity: product.stock_quantity,
-        created_at: product.created_at.to_rfc3339(),
-        updated_at: product.updated_at.to_rfc3339(),
-    };
-
-    Ok(Json(response))
+    Ok(Json(ProductResponse::from(product)))
 }
 
 #[derive(Debug, Deserialize)]
@@ -204,25 +186,35 @@ pub async fn add_stock(
 
     let now = chrono::Utc::now();
 
-    let result = sqlx::query(
+    // ------------------------------------------------------------
+    // Verify that the product exists.
+    // ------------------------------------------------------------
+
+    let product_exists = sqlx::query(
         r#"
-        UPDATE products
-        SET
-            stock_quantity = stock_quantity + ?,
-            updated_at = ?
+        SELECT id
+        FROM products
         WHERE id = ?
         "#,
     )
-    .bind(request.quantity)
-    .bind(now)
     .bind(&id)
-    .execute(&mut *transaction)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
 
-    if result.rows_affected() == 0 {
+    if product_exists.is_none() {
         return Err((StatusCode::NOT_FOUND, "Product not found".to_string()));
     }
+
+    // ------------------------------------------------------------
+    // Insert inventory movement.
+    //
+    // IMPORTANT:
+    //
+    // Do NOT update products.stock_quantity here.
+    //
+    // Migration 003's trigger automatically updates it.
+    // ------------------------------------------------------------
 
     let movement_id = uuid::Uuid::new_v4().to_string();
 
@@ -243,15 +235,23 @@ pub async fn add_stock(
     )
     .bind(&movement_id)
     .bind(&id)
-    .bind("IN")
+    .bind("ADJUSTMENT")
     .bind(request.quantity)
     .bind("STOCK_ADJUSTMENT")
-    .bind(None::<String>)
+    .bind::<Option<String>>(None)
     .bind("Stock added")
     .bind(now)
     .execute(&mut *transaction)
     .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    .map_err(|error| {
+        tracing::error!("Failed to add inventory movement: {:?}", error);
+
+        (StatusCode::BAD_REQUEST, error.to_string())
+    })?;
+
+    // ------------------------------------------------------------
+    // Read the product after the trigger has updated stock.
+    // ------------------------------------------------------------
 
     let product = sqlx::query_as::<_, Product>(
         r#"
@@ -308,7 +308,7 @@ pub struct InventoryMovementResponse {
 
 pub async fn list_inventory_movements(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    Path(id): Path<String>,
 ) -> Result<Json<Vec<InventoryMovementResponse>>, (StatusCode, String)> {
     let product_exists = sqlx::query(
         r#"
@@ -320,7 +320,7 @@ pub async fn list_inventory_movements(
     .bind(&id)
     .fetch_optional(&state.pool)
     .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    .map_err(map_database_error)?;
 
     if product_exists.is_none() {
         return Err((StatusCode::NOT_FOUND, "Product not found".to_string()));
@@ -345,12 +345,12 @@ pub async fn list_inventory_movements(
     .bind(&id)
     .fetch_all(&state.pool)
     .await
-    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    .map_err(map_database_error)?;
 
     let movements = rows
         .into_iter()
         .map(|row| {
-            let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
+            let created_at: DateTime<Utc> = row.get("created_at");
 
             InventoryMovementResponse {
                 id: row.get("id"),
@@ -366,4 +366,13 @@ pub async fn list_inventory_movements(
         .collect();
 
     Ok(Json(movements))
+}
+
+fn map_database_error(error: sqlx::Error) -> (StatusCode, String) {
+    eprintln!("Database error: {error}");
+
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Internal server error".to_string(),
+    )
 }

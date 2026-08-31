@@ -13,8 +13,38 @@ pub async fn create_product(
     selling_price: i64,
     stock_quantity: i64,
 ) -> Result<Product, sqlx::Error> {
-    let id = Uuid::new_v4().to_string();
+    if name.trim().is_empty() {
+        return Err(sqlx::Error::Protocol("Product name cannot be empty".into()));
+    }
+
+    if cost_price < 0 {
+        return Err(sqlx::Error::Protocol(
+            "Cost price cannot be negative".into(),
+        ));
+    }
+
+    if selling_price < 0 {
+        return Err(sqlx::Error::Protocol(
+            "Selling price cannot be negative".into(),
+        ));
+    }
+
+    if stock_quantity < 0 {
+        return Err(sqlx::Error::Protocol(
+            "Stock quantity cannot be negative".into(),
+        ));
+    }
+
+    let product_id = Uuid::new_v4().to_string();
     let now = Utc::now();
+
+    let mut transaction = pool.begin().await?;
+
+    // ------------------------------------------------------------
+    // Create product with ZERO stock.
+    //
+    // Initial stock will be recorded through inventory_movements.
+    // ------------------------------------------------------------
 
     sqlx::query(
         r#"
@@ -29,20 +59,55 @@ pub async fn create_product(
             created_at,
             updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
         "#,
     )
-    .bind(&id)
-    .bind(name)
+    .bind(&product_id)
+    .bind(name.trim())
     .bind(sku)
     .bind(category)
     .bind(cost_price)
     .bind(selling_price)
-    .bind(stock_quantity)
     .bind(now)
     .bind(now)
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    // ------------------------------------------------------------
+    // Record initial stock through inventory movement.
+    //
+    // The migration-003 trigger updates products.stock_quantity.
+    // ------------------------------------------------------------
+
+    if stock_quantity > 0 {
+        let movement_id = Uuid::new_v4().to_string();
+
+        sqlx::query(
+            r#"
+            INSERT INTO inventory_movements (
+                id,
+                product_id,
+                movement_type,
+                quantity,
+                reference_type,
+                reference_id,
+                notes,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&movement_id)
+        .bind(&product_id)
+        .bind("ADJUSTMENT")
+        .bind(stock_quantity)
+        .bind("PRODUCT_CREATION")
+        .bind(&product_id)
+        .bind("Initial stock")
+        .bind(now)
+        .execute(&mut *transaction)
+        .await?;
+    }
 
     let product = sqlx::query_as::<_, Product>(
         r#"
@@ -60,9 +125,11 @@ pub async fn create_product(
         WHERE id = ?
         "#,
     )
-    .bind(&id)
-    .fetch_one(pool)
+    .bind(&product_id)
+    .fetch_one(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     Ok(product)
 }
@@ -91,7 +158,7 @@ pub async fn update_product(
         WHERE id = ?
         "#,
     )
-    .bind(name)
+    .bind(name.trim())
     .bind(sku)
     .bind(category)
     .bind(cost_price)
@@ -126,4 +193,27 @@ pub async fn update_product(
     .await?;
 
     Ok(Some(product))
+}
+
+pub async fn list_products(
+    pool: &SqlitePool,
+) -> Result<Vec<Product>, sqlx::Error> {
+    sqlx::query_as::<_, Product>(
+        r#"
+        SELECT
+            id,
+            name,
+            sku,
+            category,
+            cost_price,
+            selling_price,
+            stock_quantity,
+            created_at,
+            updated_at
+        FROM products
+        ORDER BY created_at DESC
+        "#,
+    )
+    .fetch_all(pool)
+    .await
 }

@@ -1,13 +1,23 @@
-use axum::Json;
-use axum::extract::State;
+// ============================================================
+// DASHBOARD ENDPOINT
+//
+// Provides aggregated financial data for the dashboard.
+// ============================================================
+
+use axum::{Json, extract::State};
 use chrono::{Datelike, Local};
 use serde::Serialize;
 use sqlx::SqlitePool;
+use tracing::error;
 
 use crate::reports::{
     growth::Growth,
     summary::{FinancialSummary, MonthlySummary},
 };
+
+// ============================================================
+// TYPES
+// ============================================================
 
 #[derive(Clone)]
 pub struct AppState {
@@ -59,6 +69,10 @@ pub struct MonthlyHistoryResponse {
     pub net_profit: i64,
 }
 
+// ============================================================
+// CONVERSIONS
+// ============================================================
+
 impl From<FinancialSummary> for SummaryResponse {
     fn from(summary: FinancialSummary) -> Self {
         Self {
@@ -97,59 +111,65 @@ impl From<MonthlySummary> for MonthlyHistoryResponse {
     }
 }
 
+// ============================================================
+// ERROR HANDLING
+// ============================================================
+
+fn internal_error(error: sqlx::Error) -> String {
+    error!("Database error in dashboard: {:?}", error);
+    "Internal server error".to_string()
+}
+
+// ============================================================
+// ENDPOINT HANDLER
+// ============================================================
+
 pub async fn dashboard(State(state): State<AppState>) -> Result<Json<DashboardResponse>, String> {
     let today = Local::now().date_naive();
-
     let today_string = today.format("%Y-%m-%d").to_string();
-
     let year = today.year();
     let month = today.month();
 
     let today_summary = crate::reports::summary::daily_summary(&state.pool, &today_string)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let month_summary = crate::reports::summary::monthly_summary(&state.pool, year, month)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let year_summary = crate::reports::summary::yearly_summary(&state.pool, year)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let all_time = crate::reports::summary::all_time_summary(&state.pool)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let monthly_growth = crate::reports::growth::monthly_growth(&state.pool, year, month)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let yearly_growth = crate::reports::growth::yearly_growth(&state.pool, year)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let history = crate::reports::summary::monthly_history(&state.pool)
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(internal_error)?;
 
     let response = DashboardResponse {
         date: today.format("%Y-%m-%d").to_string(),
-
         today: today_summary.into(),
-
         month: PeriodResponse {
             summary: month_summary.into(),
             growth: monthly_growth.into(),
         },
-
         year: PeriodResponse {
             summary: year_summary.into(),
             growth: yearly_growth.into(),
         },
-
         all_time: all_time.into(),
-
         monthly_history: history
             .into_iter()
             .map(MonthlyHistoryResponse::from)

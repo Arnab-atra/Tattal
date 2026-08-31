@@ -1,3 +1,11 @@
+// ============================================================
+// MAIN APPLICATION ENTRY POINT
+//
+// Initializes the Tattal backend, connects to SQLite,
+// runs database migrations, builds the API router,
+// and starts the HTTP server.
+// ============================================================
+
 mod api;
 mod db;
 mod models;
@@ -6,65 +14,90 @@ mod repositories;
 
 use api::dashboard::AppState;
 use std::env;
+use std::path::PathBuf;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // --------------------------------------------------
-    // DATABASE
-    // --------------------------------------------------
+    // ------------------------------------------------------------
+    // 1. Initialize logging
+    // ------------------------------------------------------------
 
-    let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "sqlite:///home/arnab-patra/Desktop/sales-tracker/data/sales_tracker.db".to_string()
-    });
+    tracing_subscriber::fmt::init();
 
-    println!("Database: {}", database_url);
+    tracing::info!("Starting Tattal Sales Tracker...");
 
-    let pool = db::create_pool(&database_url).await?;
+    // ------------------------------------------------------------
+    // 2. Determine database path
+    // ------------------------------------------------------------
 
-    println!("Database ready.");
+    let database_path = env::var_os("DATABASE_PATH")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .expect("Backend directory should have a project root")
+                .join("data")
+                .join("sales_tracker.db")
+        });
 
-    // --------------------------------------------------
-    // DATABASE MIGRATIONS
-    // --------------------------------------------------
+    tracing::info!("Database path: {}", database_path.display());
+
+    // ------------------------------------------------------------
+    // 3. Create database connection pool
+    // ------------------------------------------------------------
+
+    let pool = db::create_pool(&database_path).await?;
+
+    tracing::info!("Database connection pool ready.");
+
+    // ------------------------------------------------------------
+    // 4. Run database migrations
+    // ------------------------------------------------------------
 
     sqlx::migrate!("../database/migrations").run(&pool).await?;
 
-    println!("Database migrations applied.");
+    tracing::info!("Database migrations applied.");
 
-    // --------------------------------------------------
-    // APPLICATION STATE
-    // --------------------------------------------------
+    // ------------------------------------------------------------
+    // 5. Build application state and router
+    // ------------------------------------------------------------
 
-    let state = AppState { pool: pool.clone() };
-
-    // --------------------------------------------------
-    // API ROUTER
-    // --------------------------------------------------
+    let state = AppState { pool };
 
     let app = api::router(state);
 
-    // --------------------------------------------------
-    // SERVER
-    // --------------------------------------------------
+    // ------------------------------------------------------------
+    // 6. Configure HTTP server
+    // ------------------------------------------------------------
 
-    let address = "127.0.0.1:3000";
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
 
-    let listener = tokio::net::TcpListener::bind(address).await?;
+    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+
+    let address = format!("{host}:{port}");
+
+    let listener = tokio::net::TcpListener::bind(&address).await?;
+
+    // ------------------------------------------------------------
+    // 7. Startup information
+    // ------------------------------------------------------------
 
     println!();
     println!("=================================");
-    println!("          SALES TRACKER");
+    println!("          TATTAL BACKEND");
     println!("=================================");
     println!();
-    println!("Server: http://{}", address);
-    println!("Database: {}", database_url);
+    println!("Server:   http://{address}");
+    println!("Database: {}", database_path.display());
     println!();
+
     println!("Available endpoints:");
     println!("  GET  /api/health");
     println!("  GET  /api/dashboard");
     println!("  GET  /api/analytics");
     println!("  GET  /api/products");
     println!("  POST /api/products");
+    println!("  PUT  /api/products/{{id}}");
     println!("  POST /api/products/{{id}}/stock");
     println!("  GET  /api/products/{{id}}/inventory");
     println!("  GET  /api/customers");
@@ -79,6 +112,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
     println!("Press Ctrl+C to stop.");
     println!("=================================");
+    println!();
+
+    // ------------------------------------------------------------
+    // 8. Start HTTP server
+    // ------------------------------------------------------------
 
     axum::serve(listener, app).await?;
 
