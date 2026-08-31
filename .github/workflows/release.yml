@@ -25,6 +25,9 @@ jobs:
       release_id: ${{ steps.release.outputs.release_id }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Create or find draft release
         id: release
         env:
