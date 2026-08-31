@@ -22,11 +22,9 @@ pub fn run() {
             println!("Tattal data directory: {}", app_data_dir.display());
             println!("Tattal database: {}", database_path.display());
 
-            let database_url = format!("sqlite://{}", database_path.to_string_lossy());
-
             tauri::async_runtime::spawn(async move {
                 if let Err(error) = backend::run_server_with_pool(
-                    match backend::db::create_pool(&database_url).await {
+                    match backend::db::create_pool(&database_path).await {
                         Ok(pool) => pool,
                         Err(error) => {
                             eprintln!("Failed to create database pool: {}", error);
