@@ -13,6 +13,64 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ============================================================
+  # PREPARE RELEASE
+  # ============================================================
+
+  prepare-release:
+    name: Prepare GitHub Release
+    runs-on: ubuntu-latest
+
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+
+    steps:
+      - name: Create or find draft release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -e
+
+          echo "Checking release for $TAG..."
+
+          RELEASE_ID=$(gh release view "$TAG" \
+            --json databaseId \
+            --jq '.databaseId' 2>/dev/null || true)
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "No release found. Creating draft release..."
+
+            gh release create "$TAG" \
+              --draft \
+              --title "Tattal $TAG" \
+              --notes "Tattal $TAG
+
+            Local business sales and inventory management application.
+
+            ## Linux
+
+            - .deb — Debian / Ubuntu and compatible distributions
+            - .rpm — Fedora / RHEL / openSUSE and compatible distributions
+            - .AppImage — Portable Linux application
+
+            ## Windows
+
+            - .exe — NSIS installer
+            - .msi — Windows Installer
+
+            Download the installer appropriate for your operating system."
+
+            RELEASE_ID=$(gh release view "$TAG" \
+              --json databaseId \
+              --jq '.databaseId')
+          else
+            echo "Existing release found: $RELEASE_ID"
+          fi
+
+          echo "Release ID: $RELEASE_ID"
+          echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
 
   # ============================================================
   # LINUX
@@ -20,6 +78,7 @@ jobs:
 
   linux:
     name: Linux - DEB RPM AppImage
+    needs: prepare-release
     runs-on: ubuntu-22.04
 
     steps:
@@ -86,35 +145,17 @@ jobs:
       - name: Check Tauri
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
 
-      - name: Build and publish Linux
+      - name: Build and upload Linux
         uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: src-tauri
+          releaseId: ${{ needs.prepare-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
-          releaseName: "Tattal ${{ github.ref_name }}"
-          releaseBody: |
-            ## Tattal ${{ github.ref_name }}
-
-            Local business sales and inventory management application.
-
-            ### Linux
-
-            - `.deb` — Debian / Ubuntu and compatible distributions
-            - `.rpm` — Fedora / RHEL / openSUSE and compatible distributions
-            - `.AppImage` — Portable Linux application
-
-            ### Windows
-
-            - `.exe` — NSIS installer
-            - `.msi` — Windows Installer
-
-            Download the installer appropriate for your operating system.
           releaseDraft: true
           prerelease: false
           args: --bundles deb,rpm,appimage
-
 
   # ============================================================
   # WINDOWS
@@ -122,6 +163,7 @@ jobs:
 
   windows:
     name: Windows - MSI NSIS
+    needs: prepare-release
     runs-on: windows-latest
 
     steps:
@@ -172,31 +214,14 @@ jobs:
       - name: Check Tauri
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
 
-      - name: Build Windows installers
+      - name: Build and upload Windows
         uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: src-tauri
+          releaseId: ${{ needs.prepare-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
-          releaseName: "Tattal ${{ github.ref_name }}"
-          releaseBody: |
-            ## Tattal ${{ github.ref_name }}
-
-            Local business sales and inventory management application.
-
-            ### Windows
-
-            - `.exe` — NSIS installer
-            - `.msi` — Windows Installer
-
-            ### Linux
-
-            - `.deb` — Debian / Ubuntu and compatible distributions
-            - `.rpm` — Fedora / RHEL / openSUSE and compatible distributions
-            - `.AppImage` — Portable Linux application
-
-            Download the installer appropriate for your operating system.
           releaseDraft: true
           prerelease: false
           args: --bundles msi,nsis
